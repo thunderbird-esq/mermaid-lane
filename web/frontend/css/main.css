@@ -519,6 +519,28 @@ img {
     border-color: var(--primary);
 }
 
+.provider-filter {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: var(--radius-md);
+    margin-bottom: 4px;
+}
+
+.provider-filter:hover {
+    background: rgba(16, 185, 129, 0.15);
+}
+
+.provider-filter.active {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--success);
+}
+
+.providers-section {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 16px;
+    margin-top: 16px;
+}
+
 
 /* ===== Loading States ===== */
 .loading-container {

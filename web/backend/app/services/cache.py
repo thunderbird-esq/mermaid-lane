@@ -344,6 +344,30 @@ class CacheService:
                 "channels_with_streams": channels_with_streams
             }
     
+    async def get_providers(self) -> list[dict]:
+        """Get unique stream providers extracted from M3U data."""
+        async with aiosqlite.connect(self.db_path) as db:
+            # Provider is stored in the JSON data field from M3U imports
+            cursor = await db.execute(
+                "SELECT data FROM streams WHERE data LIKE '%m3u_local%'"
+            )
+            rows = await cursor.fetchall()
+            
+            providers = {}
+            for row in rows:
+                try:
+                    data = json.loads(row[0])
+                    provider = data.get("provider")
+                    if provider:
+                        if provider not in providers:
+                            providers[provider] = {"id": provider, "name": provider.title(), "stream_count": 0}
+                        providers[provider]["stream_count"] += 1
+                except:
+                    pass
+            
+            # Sort by stream count
+            return sorted(providers.values(), key=lambda x: x["stream_count"], reverse=True)
+    
     # Categories and countries
     async def store_categories(self, categories: list[dict]):
         """Store categories with channel counts."""

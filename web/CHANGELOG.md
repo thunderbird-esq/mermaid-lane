@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2025-12-12
+
+### Added
+- **Providers Section** - 31 stream providers discovered and listed
+  - Pluto (492), Tubi (255), BBC (162), XUMO (162), Roku (55), Samsung (39)
+  - Provider filter in sidebar with stream counts
+  - `/api/providers` endpoint
+  
+- **EPG Route Fixes**
+  - Fixed routing order so `/api/epg/stats` works correctly
+  - Changed channel EPG route to `/api/epg/channel/{id}`
+
+### Changed
+- EPG channel endpoint moved from `/{channel_id}` to `/channel/{channel_id}`
+
 ## [0.2.0] - 2025-12-12
 
 ### Added

@@ -104,6 +104,17 @@ async def list_regions():
     return {"regions": regions}
 
 
+@router.get("/providers")
+async def list_providers():
+    """
+    List all stream providers (e.g., pluto, roku, samsung).
+    Extracted from M3U filenames.
+    """
+    cache = await get_cache()
+    providers = await cache.get_providers()
+    return {"providers": providers}
+
+
 @router.post("/sync")
 async def trigger_sync():
     """

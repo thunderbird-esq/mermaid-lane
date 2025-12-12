@@ -26,6 +26,9 @@ const App = {
             // Set up continue watching filter
             this.initContinueWatching();
 
+            // Load providers
+            this.initProviders();
+
             // Load stats
             this.loadStats();
 
@@ -212,6 +215,84 @@ const App = {
                 });
             }
         }
+    },
+
+    /**
+     * Initialize providers section in sidebar
+     */
+    async initProviders() {
+        try {
+            const { providers } = await API.getProviders();
+
+            if (!providers || providers.length === 0) return;
+
+            // Find the category list or create a providers section
+            const sidebar = document.querySelector('.sidebar');
+            if (!sidebar) return;
+
+            // Create providers section
+            const providersSection = Utils.createElement('div', { className: 'filter-section providers-section' }, [
+                Utils.createElement('h3', { className: 'filter-title' }, ['📡 Providers'])
+            ]);
+
+            const providerList = Utils.createElement('div', { className: 'filter-list', id: 'provider-list' });
+
+            // Add top providers (limit to top 10)
+            const topProviders = providers.slice(0, 10);
+            topProviders.forEach(provider => {
+                const item = Utils.createElement('div', {
+                    className: 'filter-item provider-filter',
+                    onClick: () => this.showProvider(provider.id)
+                }, [
+                    Utils.createElement('span', { className: 'filter-icon' }, ['📺']),
+                    Utils.createElement('span', { className: 'filter-name' }, [provider.name]),
+                    Utils.createElement('span', { className: 'filter-count' }, [String(provider.stream_count)])
+                ]);
+                providerList.appendChild(item);
+            });
+
+            providersSection.appendChild(providerList);
+
+            // Insert after categories section
+            const categoriesSection = sidebar.querySelector('.filter-section:last-child');
+            if (categoriesSection) {
+                categoriesSection.after(providersSection);
+            } else {
+                sidebar.appendChild(providersSection);
+            }
+        } catch (error) {
+            console.warn('Could not load providers:', error);
+        }
+    },
+
+    /**
+     * Show channels with streams from a specific provider
+     */
+    async showProvider(providerId) {
+        // Update UI
+        Channels.elements.contentTitle.textContent = `📡 ${providerId.charAt(0).toUpperCase() + providerId.slice(1)} Channels`;
+        Channels.elements.grid.innerHTML = `
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Loading ${providerId} channels...</p>
+            </div>
+        `;
+
+        // Clear active states
+        document.querySelectorAll('.filter-item').forEach(item => {
+            item.classList.remove('active');
+        });
+
+        // Note: Current API doesn't support provider filter
+        // For now, show a message. Full implementation would require backend support.
+        Channels.elements.grid.innerHTML = `
+            <div class="loading-container">
+                <p>Provider filtering coming soon!</p>
+                <p>Available: ${providerId} streams</p>
+            </div>
+        `;
+        Channels.elements.channelCount.textContent = `${providerId} streams`;
+        Utils.hide(Channels.elements.loadMore);
     },
 
     /**
