@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2025-12-12
+
+### Added
+- **EPG Reverse Mapping** - iptv-org channels now get EPG data automatically
+  - `tvguide.com` EPG imported (153 channels with proper IDs)
+  - `i.mjh.nz_pbs` EPG imported (149 PBS stations)
+  - 175 channels now mapped to EPG data
+  
+- **Batch EPG Import Script**
+  - `app/scripts/import_epg.py` for importing all EPG files
+  
+### Changed
+- `get_epg_for_channel()` now uses reverse mapping lookup
+  - Queries both iptv-org ID and mapped XMLTV IDs
+  - Returns unified channel_id for frontend
+
+### Fixed
+- EPG data now displays for channels like `FX.us`, `AMC.us`, etc.
+
 ## [1.0.0] - 2025-12-12
 
 ### Added

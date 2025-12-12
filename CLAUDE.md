@@ -2,108 +2,232 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Universal Development Guidelines
+## Project Overview
 
-### Code Quality Standards
-- Write clean, readable, and maintainable code
-- Follow consistent naming conventions across the project
-- Use meaningful variable and function names
-- Keep functions focused and single-purpose
-- Add comments for complex logic and business rules
+This is a monorepo containing IPTV playlist management tools, part of the iptv-org ecosystem.
 
-### Git Workflow
-- Use descriptive commit messages following conventional commits format
-- Create feature branches for new development
-- Keep commits atomic and focused on single changes
-- Use pull requests for code review before merging
-- Maintain a clean commit history
+## Project Structure
 
-### Documentation
-- Keep README.md files up to date
-- Document public APIs and interfaces
-- Include usage examples for complex features
-- Maintain inline code documentation
-- Update documentation when making changes
+### Root Directory
+- Minimal Python 3.14 project (placeholder/utilities)
+- Configuration files for Claude Code (.claude/)
+- Project documentation
 
-### Testing Approach
-- Write tests for new features and bug fixes
-- Maintain good test coverage
-- Use descriptive test names that explain the expected behavior
-- Organize tests logically by feature or module
-- Run tests before committing changes
+### iptv/ Directory (Main Project)
+- **TypeScript/Node.js IPTV playlist management system**
+- Part of the iptv-org open source ecosystem
+- Handles playlist generation, validation, formatting, and testing
+- Contains multiple subprojects:
+  - **api/**: API documentation and specifications
+  - **database/**: Channel database management
+  - **epg/**: Electronic Program Guide utilities
+  - **scripts/**: Core playlist processing scripts
+  - **streams/**: Stream management utilities
+  - **tests/**: Comprehensive test suite
 
-### Security Best Practices
-- Never commit sensitive information (API keys, passwords, tokens)
-- Use environment variables for configuration
-- Validate input data and sanitize outputs
-- Follow principle of least privilege
-- Keep dependencies updated
+## Technology Stack
 
-## Project Structure Guidelines
+### iptv/ (TypeScript/Node.js) - Primary Project
+- **Runtime**: Node.js with tsx for TypeScript execution
+- **Language**: TypeScript (strict mode, ES2022 target)
+- **Testing**: Jest with @swc/jest for fast compilation
+- **Linting**: ESLint with TypeScript and Stylistic plugins
+- **Module System**: NodeNext (ESM)
 
-### File Organization
-- Group related files in logical directories
-- Use consistent file and folder naming conventions
-- Separate source code from configuration files
-- Keep build artifacts out of version control
-- Organize assets and resources appropriately
+### Key Dependencies
+- **@iptv-org/sdk**: Core IPTV operations and utilities
+- **iptv-playlist-parser**: M3U playlist parsing
+- **m3u-linter**: Playlist format validation
+- **axios**: HTTP client for API requests
+- **commander**: CLI command framework
+- **chalk**: Terminal output formatting
+- **cli-progress**: Progress bars for long operations
 
-### Configuration Management
-- Use configuration files for environment-specific settings
-- Centralize configuration in dedicated files
-- Use environment variables for sensitive or environment-specific data
-- Document configuration options and their purposes
-- Provide example configuration files
+### Root (Python) - Minimal
+- **Python**: >= 3.14
+- **Purpose**: Placeholder for future utilities
+- Currently contains only a "Hello World" example
 
-## Development Workflow
+## Common Development Tasks
 
-### Before Starting Work
-1. Pull latest changes from main branch
-2. Create a new feature branch
-3. Review existing code and architecture
-4. Plan the implementation approach
+### Working with Playlists (iptv/)
 
-### During Development
-1. Make incremental commits with clear messages
-2. Run tests frequently to catch issues early
-3. Follow established coding standards
-4. Update documentation as needed
+```bash
+cd iptv
 
-### Before Submitting
-1. Run full test suite
-2. Check code quality and formatting
-3. Update documentation if necessary
-4. Create clear pull request description
+# Validation
+npm run playlist:validate    # Validate playlist structure
+npm run playlist:lint        # Run m3u-linter checks
 
-## Common Patterns
+# Formatting
+npm run playlist:format      # Format all playlists
 
-### Error Handling
-- Use appropriate error handling mechanisms for the language
-- Provide meaningful error messages
-- Log errors appropriately for debugging
-- Handle edge cases gracefully
-- Don't expose sensitive information in error messages
+# Testing
+npm run playlist:test        # Run playlist-specific tests
+npm test                     # Run full test suite
+
+# Generation and Updates
+npm run playlist:generate    # Generate new playlists
+npm run playlist:update      # Update existing playlists
+
+# Editing and Export
+npm run playlist:edit        # Interactive playlist editor
+npm run playlist:export      # Export playlists
+```
+
+### API Operations (iptv/)
+
+```bash
+cd iptv
+npm run api:load            # Load API data (runs on postinstall)
+```
+
+### Testing and Quality (iptv/)
+
+```bash
+cd iptv
+npm test                    # Run Jest tests (runInBand mode)
+npm run lint                # Run ESLint on scripts and tests
+```
+
+### Documentation (iptv/)
+
+```bash
+cd iptv
+npm run readme:update       # Update README files
+npm run report:create       # Generate reports
+```
+
+### GitHub Actions Simulation (iptv/)
+
+```bash
+cd iptv
+npm run act:check           # Simulate check workflow
+npm run act:format          # Simulate format workflow
+npm run act:update          # Simulate update workflow
+```
+
+## Code Standards
+
+### TypeScript (iptv/)
+- **Strict mode**: Enabled - all type safety features active
+- **Target**: ES2022 - modern JavaScript features
+- **Module resolution**: NodeNext - native ESM support
+- **Type roots**: Custom types in scripts/types/ + @types
+- **Naming conventions**:
+  - PascalCase for classes and types
+  - camelCase for functions and variables
+  - UPPER_CASE for constants
+- **File organization**: Follow existing patterns in scripts/
+- **Imports**: Use ESM import/export syntax
+- **Error handling**: Use try-catch with meaningful error messages
+
+### Python (Root)
+- **Version**: Python >= 3.14 required
+- **Status**: Currently minimal - placeholder for future utilities
+- **Standards**: Follow PEP 8 if/when expanded
+
+## Git Workflow
+
+### Commit Messages
+- Follow conventional commits format: `type(scope): description`
+- Types: feat, fix, docs, style, refactor, test, chore
+- Keep first line under 72 characters
+- Include body for complex changes
+
+### Branching
+- Create feature branches from main
+- Use descriptive branch names: `feature/add-validation`, `fix/parsing-error`
+- Keep commits atomic and focused
+
+### Related Repositories
+This project is part of the iptv-org ecosystem:
+- **iptv-org/database**: Channel data source
+- **iptv-org/api**: API specifications
+- **iptv-org/epg**: Electronic Program Guide data
+- See iptv/CONTRIBUTING.md for ecosystem-wide guidelines
+
+## Testing Requirements
+
+### Before Committing
+1. **Change to iptv directory**: `cd iptv`
+2. **Run tests**: `npm test` - all must pass
+3. **Run linter**: `npm run lint` - no errors
+4. **Validate playlists**: `npm run playlist:validate`
+5. **Check M3U format**: `npm run playlist:lint`
+
+### Test Organization (iptv/)
+- Tests located in `tests/` directory
+- Pattern: `tests/(.*?/)?.*test.ts$`
+- Use jest-expect-message for descriptive assertions
+- Run in band mode (--runInBand) for consistency
+
+## Configuration Files
+
+### iptv/ Configuration
+- **tsconfig.json**: TypeScript compiler settings
+- **eslint.config.mjs**: Linting rules (TypeScript + Stylistic)
+- **m3u-linter.json**: M3U playlist validation rules
+- **package.json**: Dependencies and scripts
+
+### Root Configuration
+- **pyproject.toml**: Python project metadata
+- **.python-version**: Python version specification (3.14)
+- **.claude/**: Claude Code configuration
+
+## Important Notes
+
+### Working Directory
+- **Primary workspace**: `iptv/` directory
+- Most development tasks occur in iptv/
+- Root level is for project-wide configuration
+
+### Before Making Changes
+1. Understand the iptv-org ecosystem structure
+2. Review iptv/CONTRIBUTING.md for guidelines
+3. Check existing patterns in scripts/
+4. Ensure changes maintain playlist compatibility
+
+### Playlist Integrity
+- **Critical**: Always validate playlists after modifications
+- Use m3u-linter configuration for consistency
+- M3U format errors can break downstream consumers
+- Test with actual video players when possible
 
 ### Performance Considerations
-- Profile code for performance bottlenecks
-- Optimize database queries and API calls
-- Use caching where appropriate
-- Consider memory usage and resource management
-- Monitor and measure performance metrics
-
-### Code Reusability
-- Extract common functionality into reusable modules
-- Use dependency injection for better testability
-- Create utility functions for repeated operations
-- Design interfaces for extensibility
-- Follow DRY (Don't Repeat Yourself) principle
+- Playlists can be very large (100k+ entries)
+- Use streaming/chunking for large file operations
+- Progress bars (cli-progress) for long operations
+- Consider memory usage with large datasets
 
 ## Review Checklist
 
 Before marking any task as complete:
-- [ ] Code follows established conventions
-- [ ] Tests are written and passing
-- [ ] Documentation is updated
-- [ ] Security considerations are addressed
-- [ ] Performance impact is considered
-- [ ] Code is reviewed for maintainability
+- [ ] Code follows TypeScript strict mode standards
+- [ ] All tests pass (`npm test` in iptv/)
+- [ ] Linter passes (`npm run lint` in iptv/)
+- [ ] Playlists validated (`npm run playlist:validate`)
+- [ ] M3U format checked (`npm run playlist:lint`)
+- [ ] Documentation updated if needed
+- [ ] Commit message follows conventional format
+- [ ] Changes maintain backward compatibility
+- [ ] No sensitive information committed
+
+## Quick Reference
+
+### Main Working Directory
+```bash
+cd iptv  # Most tasks happen here
+```
+
+### Pre-Commit Checklist
+```bash
+cd iptv
+npm test && npm run lint && npm run playlist:validate && npm run playlist:lint
+```
+
+### Get Help
+- See iptv/README.md for project overview
+- See iptv/CONTRIBUTING.md for contribution guidelines
+- See iptv/FAQ.md for common questions
+- Check iptv/PLAYLISTS.md for playlist documentation

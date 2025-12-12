@@ -1,0 +1,18 @@
+{
+  "workingDirectory": "iptv",
+  "permissions": {
+    "allow": [
+      "Bash(npm:*)",
+      "Bash(tsx:*)",
+      "Bash(git:*)",
+      "Bash(cat:*)",
+      "Bash(tree:*)"
+    ],
+    "deny": [],
+    "ask": [
+      "Bash(rm:*)",
+      "Bash(mv:*)"
+    ]
+  },
+  "customInstructions": "When working with this project, the main codebase is in the iptv/ directory. Use TypeScript for any code changes in iptv/. Always run tests with 'npm test' before completing tasks. Validate playlists with 'npm run playlist:validate' and 'npm run playlist:lint' after any playlist-related changes. This project is part of the iptv-org ecosystem - maintain compatibility with related repositories (iptv-org/database, iptv-org/api, iptv-org/epg). Follow strict TypeScript standards and ESM module syntax."
+}

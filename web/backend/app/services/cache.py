@@ -522,29 +522,44 @@ class CacheService:
             await db.commit()
     
     async def get_epg_for_channel(self, channel_id: str, hours: int = 24) -> list[dict]:
-        """Get EPG programs for a channel within a time window."""
+        """Get EPG programs for a channel within a time window.
+        
+        Uses reverse mapping to find EPG data stored under XMLTV IDs.
+        """
         from datetime import datetime, timedelta
         
         now = datetime.utcnow()
         end_time = now + timedelta(hours=hours)
         
+        # Build list of EPG channel IDs to search for
+        # Include the channel_id itself + any EPG IDs that map to it
+        epg_channel_ids = [channel_id]
+        
+        # Get all mappings and build reverse lookup
+        mappings = await self.get_epg_mappings()
+        for epg_id, iptv_id in mappings.items():
+            if iptv_id == channel_id:
+                epg_channel_ids.append(epg_id)
+        
         async with aiosqlite.connect(self.db_path) as db:
+            # Query for any matching EPG channel ID
+            placeholders = ','.join('?' * len(epg_channel_ids))
             cursor = await db.execute(
-                """SELECT id, channel_id, title, description, start_time, stop_time, category, icon
+                f"""SELECT id, channel_id, title, description, start_time, stop_time, category, icon
                    FROM programs 
-                   WHERE channel_id = ? AND stop_time > ? AND start_time < ?
+                   WHERE channel_id IN ({placeholders}) AND stop_time > ? AND start_time < ?
                    ORDER BY start_time""",
-                (channel_id, now.isoformat(), end_time.isoformat())
+                (*epg_channel_ids, now.isoformat(), end_time.isoformat())
             )
             rows = await cursor.fetchall()
             return [
                 {
                     "id": r[0],
-                    "channel_id": r[1],
+                    "channel_id": channel_id,  # Return the iptv-org ID, not the EPG ID
                     "title": r[2],
                     "description": r[3],
-                    "start": r[4],
-                    "stop": r[5],
+                    "start_time": r[4],
+                    "stop_time": r[5],
                     "category": r[6],
                     "icon": r[7]
                 }
