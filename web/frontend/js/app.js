@@ -29,6 +29,9 @@ const App = {
             // Load providers
             this.initProviders();
 
+            // Mobile menu
+            this.initMobileMenu();
+
             // Load stats
             this.loadStats();
 
@@ -37,6 +40,39 @@ const App = {
             console.error('❌ Failed to initialize:', error);
             this.showError('Failed to load application. Please refresh the page.');
         }
+    },
+
+    /**
+     * Initialize mobile menu toggle
+     */
+    initMobileMenu() {
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+
+        if (!menuToggle || !sidebar) return;
+
+        const toggleSidebar = () => {
+            sidebar.classList.toggle('open');
+            if (overlay) overlay.classList.toggle('active');
+        };
+
+        menuToggle.addEventListener('click', toggleSidebar);
+
+        // Close sidebar when clicking overlay
+        if (overlay) {
+            overlay.addEventListener('click', toggleSidebar);
+        }
+
+        // Close sidebar when selecting a filter
+        sidebar.addEventListener('click', (e) => {
+            if (e.target.closest('.filter-item')) {
+                if (window.innerWidth <= 1024) {
+                    sidebar.classList.remove('open');
+                    if (overlay) overlay.classList.remove('active');
+                }
+            }
+        });
     },
 
     /**

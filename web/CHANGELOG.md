@@ -10,6 +10,13 @@ All notable changes to this project will be documented in this file.
   - Provider filter in sidebar with stream counts
   - `/api/providers` endpoint
   
+- **Mobile Responsiveness**
+  - Hamburger menu toggle for sidebar on tablet/mobile
+  - Collapsible sidebar with overlay backdrop
+  - Touch-friendly controls (larger tap targets)
+  - Responsive navbar that hides search on mobile
+  - Single-column channel grid on small screens
+  
 - **EPG Route Fixes**
   - Fixed routing order so `/api/epg/stats` works correctly
   - Changed channel EPG route to `/api/epg/channel/{id}`

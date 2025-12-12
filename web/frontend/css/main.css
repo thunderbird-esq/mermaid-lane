@@ -646,11 +646,56 @@ img {
 }
 
 
+/* ===== Mobile Menu Toggle ===== */
+.navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.menu-toggle {
+    display: none;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 20px;
+}
+
+.menu-toggle:hover {
+    background: var(--bg-tertiary);
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: var(--navbar-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+
 /* ===== Responsive ===== */
 @media (max-width: 1024px) {
+    .menu-toggle {
+        display: flex;
+    }
+
     .sidebar {
         transform: translateX(-100%);
         transition: transform var(--transition-normal);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
     }
 
     .sidebar.open {
@@ -660,22 +705,82 @@ img {
     .content-area {
         margin-left: 0;
     }
+
+    .logo-text {
+        display: none;
+    }
 }
 
 @media (max-width: 768px) {
+    :root {
+        --navbar-height: 56px;
+    }
+
     .navbar {
-        padding: 0 16px;
+        padding: 0 12px;
+        gap: 12px;
     }
 
     .navbar-search {
         display: none;
     }
 
+    .btn-text {
+        display: none;
+    }
+
+    .nav-btn {
+        padding: 8px 10px;
+    }
+
     .channel-grid {
         grid-template-columns: 1fr;
+        gap: 12px;
     }
 
     .content-area {
-        padding: 16px;
+        padding: 12px;
+    }
+
+    .content-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .content-header h2 {
+        font-size: 20px;
+    }
+
+    /* Larger touch targets */
+    .channel-card-inner {
+        padding: 14px;
+    }
+
+    .favorite-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+    }
+
+    .filter-item {
+        padding: 14px 12px;
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar-brand {
+        display: none;
+    }
+
+    .channel-logo,
+    .channel-logo-placeholder {
+        width: 52px;
+        height: 52px;
+    }
+
+    .channel-name {
+        font-size: 14px;
     }
 }
