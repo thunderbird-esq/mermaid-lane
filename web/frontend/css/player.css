@@ -116,110 +116,72 @@
     aspect-ratio: 16 / 9;
 }
 
-.video-player {
+/* Video.js Override Styles for Premium Look */
+.video-js {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    background: #000;
 }
 
-
-/* ===== Player Controls ===== */
-.player-controls {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 20px;
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
-    opacity: 0;
-    transition: opacity var(--transition-normal);
-}
-
-.player-video-wrap:hover .player-controls {
-    opacity: 1;
-}
-
-.control-btn {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-md);
-    color: white;
-    font-size: 16px;
-    transition: all var(--transition-fast);
-}
-
-.control-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.05);
-}
-
-.play-btn {
-    width: 48px;
-    height: 48px;
-    background: var(--accent-primary);
-    font-size: 18px;
-}
-
-.play-btn:hover {
-    background: var(--accent-secondary);
-}
-
-
-/* ===== Volume Control ===== */
-.volume-control {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.volume-slider {
-    width: 80px;
-    height: 4px;
-    -webkit-appearance: none;
-    appearance: none;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 2px;
-    cursor: pointer;
-}
-
-.volume-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
-    background: var(--accent-primary);
+.video-js .vjs-big-play-button {
+    background-color: var(--accent-primary);
+    border: none;
     border-radius: 50%;
-    cursor: pointer;
+    width: 80px;
+    height: 80px;
+    line-height: 80px;
+    margin-left: -40px;
+    margin-top: -40px;
+    font-size: 40px;
+    transition: transform var(--transition-fast);
 }
 
+.video-js .vjs-big-play-button:hover {
+    transform: scale(1.1);
+    background-color: var(--accent-secondary);
+}
 
-/* ===== Quality Select ===== */
-.quality-select {
+.video-js .vjs-control-bar {
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+    height: 60px;
+    display: flex;
+    align-items: center;
+}
+
+.video-js .vjs-button {
+    color: #fff;
+}
+
+.video-js .vjs-button:hover {
+    color: var(--accent-primary);
+}
+
+.video-js .vjs-play-progress {
+    background-color: var(--accent-primary);
+}
+
+.video-js .vjs-slider {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Quality Selector Menu */
+.vjs-menu-button-popup .vjs-menu {
+    background-color: rgba(0, 0, 0, 0.9);
+    border-radius: var(--radius-md);
+}
+
+.vjs-menu-content {
+    font-family: 'Inter', sans-serif;
+}
+
+.vjs-menu-item {
     padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius-sm);
+    text-transform: capitalize;
+}
+
+.vjs-menu-item:hover,
+.vjs-menu-item.vjs-selected {
+    background-color: var(--accent-primary);
     color: white;
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.quality-select option {
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-}
-
-
-/* ===== Player Spacer ===== */
-.player-spacer {
-    flex: 1;
 }
 
 
@@ -235,6 +197,13 @@
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.8);
+    z-index: 10;
+    pointer-events: none;
+    /* Let clicks pass through unless interactive */
+}
+
+.player-overlay.interactive {
+    pointer-events: auto;
 }
 
 .player-overlay.hidden {
@@ -243,6 +212,7 @@
 
 .player-overlay.error {
     background: rgba(0, 0, 0, 0.9);
+    pointer-events: auto;
 }
 
 .error-message {
@@ -258,6 +228,8 @@
     color: white;
     font-size: 14px;
     font-weight: 500;
+    border: none;
+    cursor: pointer;
     transition: all var(--transition-fast);
 }
 
@@ -353,13 +325,5 @@
     .player-video-wrap {
         flex: 1;
         aspect-ratio: unset;
-    }
-
-    .player-controls {
-        opacity: 1;
-    }
-
-    .volume-slider {
-        width: 60px;
     }
 }

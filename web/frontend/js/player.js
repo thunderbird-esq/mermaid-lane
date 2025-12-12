@@ -1,14 +1,12 @@
 /**
- * IPTV Web - Video Player with HLS.js
+ * IPTV Web - Video Player with Video.js
  */
 
 const Player = {
     // State
-    hls: null,
-    video: null,
+    player: null,
     currentChannel: null,
     currentStream: null,
-    isPlaying: false,
 
     // DOM elements
     elements: {},
@@ -17,7 +15,28 @@ const Player = {
      * Initialize the player
      */
     init() {
-        this.video = document.getElementById('video-player');
+        // Initialize Video.js with native controls enabled
+        this.player = videojs('video-player', {
+            controls: true,
+            autoplay: false,
+            preload: 'auto',
+            fill: true,
+            html5: {
+                vhs: {
+                    overrideNative: true
+                },
+                nativeAudioTracks: false,
+                nativeVideoTracks: false
+            }
+        });
+
+        // Initialize plugins
+        // Initialize plugins
+        this.player.ready(() => {
+            if (this.player.httpSourceSelector) {
+                this.player.httpSourceSelector();
+            }
+        });
 
         this.elements = {
             modal: document.getElementById('player-modal'),
@@ -26,27 +45,23 @@ const Player = {
             logo: document.getElementById('player-logo'),
             title: document.getElementById('player-title'),
             program: document.getElementById('player-program'),
-            playPause: document.getElementById('play-pause'),
-            muteBtn: document.getElementById('mute-btn'),
-            volumeSlider: document.getElementById('volume-slider'),
-            qualitySelect: document.getElementById('quality-select'),
-            pipBtn: document.getElementById('pip-btn'),
-            fullscreenBtn: document.getElementById('fullscreen-btn'),
             loading: document.getElementById('player-loading'),
             error: document.getElementById('player-error'),
             retryBtn: document.getElementById('retry-btn'),
-            streamList: document.getElementById('stream-list')
+            streamList: document.getElementById('stream-list'),
+            // Custom controls wrapper (to hide it)
+            customControls: document.querySelector('.player-controls')
         };
 
         this.bindEvents();
-        console.log('Player initialized');
+        console.log('Player initialized (Video.js + Plugins)');
     },
 
     /**
      * Bind control events
      */
     bindEvents() {
-        // Close button
+        // Close button (Modal UI)
         this.elements.close.addEventListener('click', () => this.close());
 
         // Click outside to close
@@ -56,41 +71,23 @@ const Player = {
             }
         });
 
-        // Play/Pause
-        this.elements.playPause.addEventListener('click', () => this.togglePlay());
-        this.video.addEventListener('click', () => this.togglePlay());
-
-        // Volume
-        this.elements.muteBtn.addEventListener('click', () => this.toggleMute());
-        this.elements.volumeSlider.addEventListener('input', (e) => {
-            this.video.volume = parseFloat(e.target.value);
-            this.video.muted = false;
-            this.updateVolumeIcon();
-        });
-
-        // Quality
-        this.elements.qualitySelect.addEventListener('change', (e) => {
-            this.setQuality(e.target.value);
-        });
-
-        // Picture in Picture
-        this.elements.pipBtn.addEventListener('click', () => this.togglePiP());
-
-        // Fullscreen
-        this.elements.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
-
-        // Retry
+        // Retry button
         this.elements.retryBtn.addEventListener('click', () => this.retry());
 
-        // Video events
-        this.video.addEventListener('play', () => this.onPlay());
-        this.video.addEventListener('pause', () => this.onPause());
-        this.video.addEventListener('waiting', () => this.showLoading());
-        this.video.addEventListener('canplay', () => this.hideLoading());
-        this.video.addEventListener('error', (e) => this.onError(e));
+        // Video.js events
+        this.player.ready(() => {
+            this.player.on('play', () => this.onPlay());
+            this.player.on('pause', () => this.onPause());
+            this.player.on('waiting', () => this.showLoading());
+            this.player.on('playing', () => this.hideLoading());
+            this.player.on('error', (e) => this.onError(e));
+        });
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+        // Keyboard shortcuts - Delegate to Video.js where possible, but handle Escape
+        document.addEventListener('keydown', (e) => {
+            if (!this.isOpen()) return;
+            if (e.key === 'Escape') this.close();
+        });
     },
 
     /**
@@ -102,7 +99,7 @@ const Player = {
         // Track in watch history
         Favorites.addToHistory(channel);
 
-        // Update UI
+        // Update UI info
         this.elements.title.textContent = channel.name;
         this.elements.program.textContent = channel.streams?.length ?
             `${channel.streams.length} stream${channel.streams.length > 1 ? 's' : ''} available` :
@@ -129,8 +126,13 @@ const Player = {
         Utils.show(this.elements.modal);
         this.showLoading();
 
-        // Populate stream list
+        // Populate stream list (custom UI below player)
         this.renderStreamList(channel.streams || []);
+
+        // Hide custom controls if they exist (we use native now)
+        if (this.elements.customControls) {
+            this.elements.customControls.style.display = 'none';
+        }
 
         // Play first available stream
         if (channel.streams && channel.streams.length > 0) {
@@ -174,176 +176,24 @@ const Player = {
 
         const streamUrl = API.getStreamUrl(stream.stream_id);
 
-        // Clean up existing HLS instance
-        if (this.hls) {
-            this.hls.destroy();
-            this.hls = null;
+        // Determine type based on URL (optional explicit type setting)
+        // Video.js usually detects automatically, but we can help it.
+        // Backend returns .m3u8 extension for HLS proxies.
+        let type = 'application/x-mpegURL';
+        if (streamUrl.includes('.mpd')) {
+            type = 'application/dash+xml';
         }
 
-        // Check if HLS.js is supported
-        if (Hls.isSupported()) {
-            this.hls = new Hls({
-                maxBufferLength: 30,
-                maxMaxBufferLength: 60,
-                maxBufferSize: 60 * 1000 * 1000,
-                enableWorker: true
-            });
-
-            this.hls.loadSource(streamUrl);
-            this.hls.attachMedia(this.video);
-
-            this.hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-                this.updateQualityOptions(data.levels);
-                this.video.play().catch(() => { });
-            });
-
-            this.hls.on(Hls.Events.ERROR, (event, data) => {
-                if (data.fatal) {
-                    switch (data.type) {
-                        case Hls.ErrorTypes.NETWORK_ERROR:
-                            console.error('Network error', data);
-                            this.hls.startLoad();
-                            break;
-                        case Hls.ErrorTypes.MEDIA_ERROR:
-                            console.error('Media error', data);
-                            this.hls.recoverMediaError();
-                            break;
-                        default:
-                            this.showError('Stream playback failed');
-                            break;
-                    }
-                }
-            });
-        } else if (this.video.canPlayType('application/vnd.apple.mpegurl')) {
-            // Native HLS support (Safari)
-            this.video.src = streamUrl;
-            this.video.addEventListener('loadedmetadata', () => {
-                this.video.play().catch(() => { });
-            });
-        } else {
-            this.showError('HLS not supported in this browser');
-        }
-    },
-
-    /**
-     * Update quality selector options
-     */
-    updateQualityOptions(levels) {
-        this.elements.qualitySelect.innerHTML = '<option value="auto">Auto</option>';
-
-        levels.forEach((level, index) => {
-            const height = level.height || 'Unknown';
-            const option = document.createElement('option');
-            option.value = index;
-            option.textContent = `${height}p`;
-            this.elements.qualitySelect.appendChild(option);
+        // Load stream in Video.js
+        this.player.src({
+            src: streamUrl,
+            type: type
         });
-    },
 
-    /**
-     * Set video quality
-     */
-    setQuality(value) {
-        if (!this.hls) return;
-
-        if (value === 'auto') {
-            this.hls.currentLevel = -1; // Auto
-        } else {
-            this.hls.currentLevel = parseInt(value);
-        }
-    },
-
-    /**
-     * Toggle play/pause
-     */
-    togglePlay() {
-        if (this.video.paused) {
-            this.video.play().catch(() => { });
-        } else {
-            this.video.pause();
-        }
-    },
-
-    /**
-     * Toggle mute
-     */
-    toggleMute() {
-        this.video.muted = !this.video.muted;
-        this.updateVolumeIcon();
-    },
-
-    /**
-     * Update volume icon
-     */
-    updateVolumeIcon() {
-        if (this.video.muted || this.video.volume === 0) {
-            this.elements.muteBtn.textContent = '🔇';
-        } else if (this.video.volume < 0.5) {
-            this.elements.muteBtn.textContent = '🔉';
-        } else {
-            this.elements.muteBtn.textContent = '🔊';
-        }
-    },
-
-    /**
-     * Toggle Picture in Picture
-     */
-    async togglePiP() {
         try {
-            if (document.pictureInPictureElement) {
-                await document.exitPictureInPicture();
-            } else if (document.pictureInPictureEnabled) {
-                await this.video.requestPictureInPicture();
-            }
-        } catch (error) {
-            console.error('PiP error:', error);
-        }
-    },
-
-    /**
-     * Toggle fullscreen
-     */
-    toggleFullscreen() {
-        if (document.fullscreenElement) {
-            document.exitFullscreen();
-            this.elements.modal.classList.remove('fullscreen');
-        } else {
-            this.elements.modal.requestFullscreen();
-            this.elements.modal.classList.add('fullscreen');
-        }
-    },
-
-    /**
-     * Handle keyboard shortcuts
-     */
-    handleKeyboard(e) {
-        if (!this.isOpen()) return;
-
-        switch (e.key) {
-            case ' ':
-            case 'k':
-                e.preventDefault();
-                this.togglePlay();
-                break;
-            case 'Escape':
-                this.close();
-                break;
-            case 'f':
-                this.toggleFullscreen();
-                break;
-            case 'm':
-                this.toggleMute();
-                break;
-            case 'ArrowUp':
-                e.preventDefault();
-                this.video.volume = Math.min(1, this.video.volume + 0.1);
-                this.elements.volumeSlider.value = this.video.volume;
-                break;
-            case 'ArrowDown':
-                e.preventDefault();
-                this.video.volume = Math.max(0, this.video.volume - 0.1);
-                this.elements.volumeSlider.value = this.video.volume;
-                break;
+            await this.player.play();
+        } catch (e) {
+            console.warn('Playback failed to start automatically', e);
         }
     },
 
@@ -351,19 +201,16 @@ const Player = {
      * Event handlers
      */
     onPlay() {
-        this.isPlaying = true;
-        this.elements.playPause.textContent = '⏸';
         this.hideLoading();
     },
 
     onPause() {
-        this.isPlaying = false;
-        this.elements.playPause.textContent = '▶';
+        // Optional: show overlay?
     },
 
     onError(e) {
-        console.error('Video error:', e);
-        this.showError('Stream playback error');
+        console.error('Video error:', this.player.error());
+        this.showError('Playback error');
     },
 
     /**
@@ -387,7 +234,8 @@ const Player = {
     showError(message) {
         Utils.hide(this.elements.loading);
         Utils.show(this.elements.error);
-        this.elements.error.querySelector('.error-message').textContent = message;
+        const msgEl = this.elements.error.querySelector('.error-message');
+        if (msgEl) msgEl.textContent = message;
     },
 
     /**
@@ -410,15 +258,8 @@ const Player = {
      * Close the player
      */
     close() {
-        // Stop playback
-        this.video.pause();
-        this.video.src = '';
-
-        // Clean up HLS
-        if (this.hls) {
-            this.hls.destroy();
-            this.hls = null;
-        }
+        this.player.pause();
+        this.player.src(''); // Unload
 
         // Hide modal
         Utils.hide(this.elements.modal);
