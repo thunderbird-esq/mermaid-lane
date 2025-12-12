@@ -13,6 +13,7 @@ router = APIRouter(prefix="/api", tags=["channels"])
 async def list_channels(
     country: Optional[str] = Query(None, description="Filter by country code (e.g., US, UK)"),
     category: Optional[str] = Query(None, description="Filter by category (e.g., news, sports)"),
+    provider: Optional[str] = Query(None, description="Filter by stream provider (e.g., pluto, roku)"),
     search: Optional[str] = Query(None, description="Search in channel names"),
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(50, ge=1, le=100, description="Results per page"),
@@ -22,12 +23,14 @@ async def list_channels(
     
     - **country**: ISO 3166-1 alpha-2 country code
     - **category**: Category ID from /api/categories
+    - **provider**: Stream provider (pluto, roku, samsung, etc.)
     - **search**: Search term for channel name
     """
     cache = await get_cache()
     channels, total = await cache.get_channels(
         country=country,
         category=category,
+        provider=provider,
         search=search,
         page=page,
         per_page=per_page

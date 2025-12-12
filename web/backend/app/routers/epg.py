@@ -169,3 +169,42 @@ async def clear_epg():
     cache = await get_cache()
     await cache.clear_epg()
     return {"success": True, "message": "EPG data cleared"}
+
+
+@router.post("/map")
+async def run_epg_mapping():
+    """
+    Run EPG channel mapping to link EPG channels to iptv-org IDs.
+    """
+    from app.services.epg_mapping import EPGMapper
+    
+    cache = await get_cache()
+    mapper = EPGMapper(cache)
+    
+    try:
+        stats = await mapper.batch_map_epg_channels()
+        return {
+            "success": True,
+            "message": f"Mapped {stats['mapped']} of {stats['total_epg_channels']} channels",
+            **stats
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Mapping failed: {str(e)}")
+
+
+@router.get("/coverage")
+async def get_epg_coverage():
+    """
+    Get EPG coverage statistics - which channels have EPG data.
+    """
+    cache = await get_cache()
+    
+    epg_channels = await cache.get_unique_epg_channels()
+    mappings = await cache.get_epg_mappings()
+    
+    return {
+        "epg_channels": len(epg_channels),
+        "mapped_channels": len(mappings),
+        "sample_mappings": dict(list(mappings.items())[:10]) if mappings else {}
+    }
+

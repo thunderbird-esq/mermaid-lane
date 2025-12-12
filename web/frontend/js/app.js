@@ -319,16 +319,28 @@ const App = {
             item.classList.remove('active');
         });
 
-        // Note: Current API doesn't support provider filter
-        // For now, show a message. Full implementation would require backend support.
-        Channels.elements.grid.innerHTML = `
-            <div class="loading-container">
-                <p>Provider filtering coming soon!</p>
-                <p>Available: ${providerId} streams</p>
-            </div>
-        `;
-        Channels.elements.channelCount.textContent = `${providerId} streams`;
-        Utils.hide(Channels.elements.loadMore);
+        try {
+            // Use the provider filter in API
+            const result = await API.getChannels({ provider: providerId, perPage: 50 });
+
+            Channels.elements.grid.innerHTML = '';
+            Channels.channels = result.channels;
+            Channels.renderChannels(result.channels);
+            Channels.elements.channelCount.textContent = `${result.total} ${providerId} channels`;
+
+            if (result.has_more) {
+                Utils.show(Channels.elements.loadMore);
+            } else {
+                Utils.hide(Channels.elements.loadMore);
+            }
+        } catch (error) {
+            console.error('Failed to load provider channels:', error);
+            Channels.elements.grid.innerHTML = `
+                <div class="loading-container">
+                    <p>Failed to load ${providerId} channels</p>
+                </div>
+            `;
+        }
     },
 
     /**

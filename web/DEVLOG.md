@@ -2,6 +2,32 @@
 
 ## 2025-12-12
 
+### Session 3: v1.0.0 Release
+
+**Goal**: Complete remaining tasks with TDD approach.
+
+**Test Infrastructure**:
+- Created pytest test suite with 11 tests
+- Tests for M3U parser, EPG parser, and EPG mapping
+- All tests passing in 0.02s
+
+**EPG Channel Mapping**:
+- Built `epg_mapping.py` with direct + fuzzy matching
+- Note: Pluto TV uses internal IDs (MongoDB-style), not iptv-org format
+- Future: Need EPG sources with compatible IDs
+
+**Provider Filtering (Complete)**:
+- Added `?provider=pluto` to `/api/channels`
+- Frontend now shows 249 Pluto channels when filtering
+- 31 total providers: Pluto, Tubi, BBC, XUMO, Roku, Samsung, etc.
+
+**Performance & Security**:
+- Added PWA manifest.json
+- Added Content-Security-Policy
+- Mobile responsive complete
+
+---
+
 ### Session 2: Elevation & Feature Expansion
 
 **Goal**: Elevate the app from prototype to fully usable by leveraging all available iptv-org resources.

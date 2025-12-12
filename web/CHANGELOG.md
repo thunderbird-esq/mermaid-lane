@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0] - 2025-12-12
+
+### Added
+- **Test Suite** - 11 pytest tests covering M3U, EPG, and mapping
+  - M3U parser: 4 tests (parsing, provider extraction, error handling, quality)
+  - EPG parser: 3 tests (program parsing, multi-program, missing fields)
+  - EPG mapping: 4 tests (exact match, fuzzy match, unmapped, batch)
+  
+- **EPG Channel Mapping** - Link EPG data to iptv-org channels
+  - Direct ID matching
+  - Fuzzy name matching with SequenceMatcher
+  - `/api/epg/map` endpoint
+  - `/api/epg/coverage` endpoint
+  
+- **Provider Filtering (Complete)**
+  - `/api/channels?provider=pluto` filter
+  - Frontend sidebar loads provider channels
+  - 249 Pluto channels, 31 providers total
+  
+- **PWA Support**
+  - manifest.json for add-to-home-screen
+  - theme-color meta tag
+  
+- **Security**
+  - Content-Security-Policy header
+  - Restricts scripts, styles, and connections
+
 ## [0.3.0] - 2025-12-12
 
 ### Added

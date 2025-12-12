@@ -36,10 +36,11 @@ const API = {
     /**
      * Get channels with filtering and pagination
      */
-    async getChannels({ country, category, search, page = 1, perPage = 50 } = {}) {
+    async getChannels({ country, category, provider, search, page = 1, perPage = 50 } = {}) {
         const params = new URLSearchParams();
         if (country) params.set('country', country);
         if (category) params.set('category', category);
+        if (provider) params.set('provider', provider);
         if (search) params.set('search', search);
         params.set('page', page);
         params.set('per_page', perPage);

@@ -202,6 +202,7 @@ class CacheService:
         self,
         country: Optional[str] = None,
         category: Optional[str] = None,
+        provider: Optional[str] = None,
         search: Optional[str] = None,
         page: int = 1,
         per_page: int = 50
@@ -222,6 +223,14 @@ class CacheService:
             if search:
                 conditions.append("(name LIKE ? OR alt_names LIKE ?)")
                 params.extend([f"%{search}%", f"%{search}%"])
+            
+            if provider:
+                # Filter channels that have streams from this provider
+                conditions.append("""id IN (
+                    SELECT channel_id FROM streams 
+                    WHERE data LIKE ? AND channel_id IS NOT NULL
+                )""")
+                params.append(f'%"provider": "{provider}"%')
             
             where_clause = " AND ".join(conditions)
             
@@ -591,6 +600,31 @@ class CacheService:
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("DELETE FROM programs")
             await db.commit()
+    
+    async def get_all_channels(self) -> list[dict]:
+        """Get all channels for mapping purposes."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("SELECT id, name FROM channels")
+            rows = await cursor.fetchall()
+            return [{"id": r[0], "name": r[1]} for r in rows]
+    
+    async def get_unique_epg_channels(self) -> list[str]:
+        """Get unique channel IDs from EPG programs."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("SELECT DISTINCT channel_id FROM programs")
+            rows = await cursor.fetchall()
+            return [r[0] for r in rows if r[0]]
+    
+    async def store_epg_mappings(self, mappings: dict):
+        """Store EPG channel ID to iptv-org ID mappings."""
+        # Store in cache table as JSON
+        await self.set('epg_mappings', mappings, ttl_seconds=86400 * 30)  # 30 days
+    
+    async def get_epg_mappings(self) -> dict:
+        """Get stored EPG mappings."""
+        result = await self.get('epg_mappings')
+        return result or {}
+
 
 
 # Singleton instance
