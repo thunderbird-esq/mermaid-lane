@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(cat:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Skill(skill-creator)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

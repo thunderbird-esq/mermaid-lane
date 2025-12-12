@@ -9,9 +9,11 @@ A modern, secure IPTV streaming web application built on top of the [iptv-org](h
 - 📺 **38,000+ Channels** from iptv-org database
 - 🌍 **200+ Countries** with filtering and search
 - 🎯 **30 Categories** (News, Sports, Movies, etc.)
+- 🏢 **Provider Filter** - Browse by Pluto TV, Tubi, Samsung TV Plus, etc.
 - 🔒 **Secure Streaming** - All streams proxied (no URL exposure)
-- 📅 **EPG Support** - Electronic Program Guide
-- 📱 **Responsive Design** - Works on desktop and mobile
+- 📅 **EPG Integration** - Now Playing info & channel guides
+- ❤️ **Favorites** - Save and organize your favorite channels
+- 📱 **PWA Support** - Installable on mobile & desktop
 - 🌙 **Dark Theme** - Modern glassmorphism UI
 
 ## Quick Start

@@ -243,13 +243,20 @@ const Channels = {
         this.loading = true;
 
         // Show loading state
+        // Show loading state
         if (this.currentPage === 1) {
-            this.elements.grid.innerHTML = `
-                <div class="loading-container">
-                    <div class="loading-spinner"></div>
-                    <p>Loading channels...</p>
-                </div>
-            `;
+            this.elements.grid.innerHTML = Array(12).fill(0).map(() => `
+                <article class="channel-card skeleton-card">
+                    <div class="channel-card-inner">
+                        <div class="skeleton skeleton-logo"></div>
+                        <div class="channel-info">
+                            <div class="skeleton skeleton-text"></div>
+                            <div class="skeleton skeleton-epg"></div>
+                            <div class="skeleton skeleton-text short"></div>
+                        </div>
+                    </div>
+                </article>
+            `).join('');
         }
 
         try {
@@ -309,9 +316,19 @@ const Channels = {
         const logo = channel.logos?.[0]?.url;
         const category = channel.categories?.[0];
         const country = this.countries.find(c => c.code === channel.country);
+        const nowPlaying = channel.now_playing;
+
+        // Calculate progress if now playing exists
+        let progressPercent = 0;
+        if (nowPlaying) {
+            const start = new Date(nowPlaying.start).getTime();
+            const stop = new Date(nowPlaying.stop).getTime();
+            const now = Date.now();
+            progressPercent = Math.min(100, Math.max(0, ((now - start) / (stop - start)) * 100));
+        }
 
         const card = Utils.createElement('article', {
-            className: 'channel-card',
+            className: 'channel-card' + (nowPlaying ? ' has-epg' : ''),
             dataset: { channelId: channel.id },
             onClick: () => this.openChannel(channel.id)
         }, [
@@ -332,13 +349,28 @@ const Channels = {
                 // Info
                 Utils.createElement('div', { className: 'channel-info' }, [
                     Utils.createElement('h3', { className: 'channel-name' }, [channel.name]),
+
+                    // Now Playing
+                    nowPlaying ? Utils.createElement('div', { className: 'now-playing' }, [
+                        Utils.createElement('span', { className: 'now-playing-label' }, ['▶️ ']),
+                        Utils.createElement('span', { className: 'now-playing-title' }, [
+                            nowPlaying.title.length > 30 ? nowPlaying.title.substring(0, 30) + '...' : nowPlaying.title
+                        ]),
+                        Utils.createElement('div', { className: 'now-playing-progress' }, [
+                            Utils.createElement('div', {
+                                className: 'now-playing-progress-bar',
+                                style: `width: ${progressPercent}%`
+                            })
+                        ])
+                    ]) : null,
+
                     Utils.createElement('div', { className: 'channel-meta' }, [
                         country ? Utils.createElement('span', { className: 'channel-country' },
                             [`${country.flag} ${country.name}`]) : null,
                         category ? Utils.createElement('span', { className: 'channel-category' },
                             [category]) : null
                     ].filter(Boolean))
-                ]),
+                ].filter(Boolean)),
 
                 // Favorite button
                 Favorites.createToggleButton(channel.id)

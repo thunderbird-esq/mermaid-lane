@@ -5,21 +5,29 @@ All notable changes to this project will be documented in this file.
 ## [1.1.0] - 2025-12-12
 
 ### Added
-- **EPG Reverse Mapping** - iptv-org channels now get EPG data automatically
-  - `tvguide.com` EPG imported (153 channels with proper IDs)
-  - `i.mjh.nz_pbs` EPG imported (149 PBS stations)
-  - 175 channels now mapped to EPG data
+- **Now Playing Integration**
+  - "Now Playing" info directly on channel cards
+  - Live progress bar showing show status
+  - `include_epg` parameter in `/api/channels` endpoint
   
-- **Batch EPG Import Script**
-  - `app/scripts/import_epg.py` for importing all EPG files
+- **Enhanced EPG Mapping**
+  - Multi-strategy mapping (Direct, Prefix-based, Fuzzy Name Match)
+  - Mapping rate improved to ~21% (518 channels mapped)
+  - Imported EPG sources: `tvguide.com`, `i.mjh.nz_pbs`, `gatotv.com`
+  - Batch import script: `app/scripts/import_epg.py`
   
+- **UI Polish**
+  - Skeleton loaders for smoother loading states
+  - "Now Playing" visual indicators
+  - Improved date/time handling in backend SQL queries
+
 ### Changed
-- `get_epg_for_channel()` now uses reverse mapping lookup
-  - Queries both iptv-org ID and mapped XMLTV IDs
-  - Returns unified channel_id for frontend
+- `get_now_playing_for_channels` now uses ISO date format with T separator to correctly match DB storage
+- `get_epg_for_channel` uses reverse mapping lookup to find data across multiple EPG IDs
 
 ### Fixed
-- EPG data now displays for channels like `FX.us`, `AMC.us`, etc.
+- Fixed SQL datetime comparison bug preventing "Now Playing" from showing
+- Fixed EPG data visibility for channels with simple ID variations (e.g. `ABC.us@East` -> `ABC.us`)
 
 ## [1.0.0] - 2025-12-12
 

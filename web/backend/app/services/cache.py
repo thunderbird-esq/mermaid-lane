@@ -596,6 +596,64 @@ class CacheService:
                 for r in rows
             ]
     
+    async def get_now_playing_for_channels(self, channel_ids: list[str]) -> dict[str, dict]:
+        """Get currently playing program for multiple channels.
+        
+        Args:
+            channel_ids: List of iptv-org channel IDs
+        
+        Returns:
+            Dict mapping channel_id to current program (or None)
+        """
+        from datetime import datetime, timezone
+        
+        if not channel_ids:
+            return {}
+        
+        # Use ISO format with T separator to match DB text storage
+        now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S')
+        
+        # Get EPG mappings for reverse lookup
+        mappings = await self.get_epg_mappings()
+        
+        # Build all possible EPG IDs to query
+        epg_ids_to_check = set()
+        channel_to_epg = {}  # iptv_id -> list of epg_ids
+        
+        for ch_id in channel_ids:
+            epg_ids_to_check.add(ch_id)
+            channel_to_epg[ch_id] = [ch_id]
+            
+            # Find all EPG IDs that map to this channel
+            for epg_id, iptv_id in mappings.items():
+                if iptv_id == ch_id:
+                    epg_ids_to_check.add(epg_id)
+                    channel_to_epg[ch_id].append(epg_id)
+        
+        # Query all at once
+        async with aiosqlite.connect(self.db_path) as db:
+            placeholders = ','.join('?' * len(epg_ids_to_check))
+            cursor = await db.execute(
+                f"""SELECT channel_id, title, start_time, stop_time
+                   FROM programs 
+                   WHERE channel_id IN ({placeholders}) AND start_time <= ? AND stop_time > ?
+                   ORDER BY start_time""",
+                (*epg_ids_to_check, now, now)
+            )
+            rows = await cursor.fetchall()
+        
+        # Build result - map EPG results back to iptv-org IDs
+        epg_results = {r[0]: {"title": r[1], "start": r[2], "stop": r[3]} for r in rows}
+        
+        result = {}
+        for ch_id in channel_ids:
+            for epg_id in channel_to_epg.get(ch_id, []):
+                if epg_id in epg_results:
+                    result[ch_id] = epg_results[epg_id]
+                    break
+        
+        return result
+    
     async def get_epg_stats(self) -> dict:
         """Get EPG statistics."""
         async with aiosqlite.connect(self.db_path) as db:

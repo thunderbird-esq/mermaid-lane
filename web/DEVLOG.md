@@ -2,6 +2,31 @@
 
 ## 2025-12-12
 
+### Session 4: EPG & Now Playing (v1.1.0)
+
+**Goal**: Seamless EPG integration and "Now Playing" functionality.
+
+**EPG Improvements**:
+- Imported `tvguide.com` (153 channels) and `PBS` (149 channels) which use correct `Channel.us` format
+- Imported `gatotv.com` (470 channels) for Latin America
+- Implemented `EPGMapper` with multi-strategy matching:
+  - Strategy 1: Direct Match (`ABC.us` == `ABC.us`)
+  - Strategy 2: Base ID (`ABC.us@East` -> `ABC.us`)
+  - Strategy 3: Fuzzy Name Match (SequenceMatcher > 0.8)
+- Result: 518 channels mapped (21% of cache), up from 0%
+
+**Now Playing**:
+- Backend: `get_now_playing_for_channels` modified to use ISO date format (fixed SQL bug)
+- API: Added `include_epg=true` to `/api/channels`
+- Frontend: `createChannelCard` now renders current show title + progress bar
+- Confirmed "South Park" showing on Comedy Central
+
+**UI Polish**:
+- Added skeleton loaders (shimmer effect) for better perceived performance
+- Verified Favorites system functionality intact
+
+---
+
 ### Session 3: v1.0.0 Release
 
 **Goal**: Complete remaining tasks with TDD approach.

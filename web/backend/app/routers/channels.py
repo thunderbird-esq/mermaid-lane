@@ -15,6 +15,7 @@ async def list_channels(
     category: Optional[str] = Query(None, description="Filter by category (e.g., news, sports)"),
     provider: Optional[str] = Query(None, description="Filter by stream provider (e.g., pluto, roku)"),
     search: Optional[str] = Query(None, description="Search in channel names"),
+    include_epg: bool = Query(False, description="Include now playing info from EPG"),
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(50, ge=1, le=100, description="Results per page"),
 ):
@@ -25,6 +26,7 @@ async def list_channels(
     - **category**: Category ID from /api/categories
     - **provider**: Stream provider (pluto, roku, samsung, etc.)
     - **search**: Search term for channel name
+    - **include_epg**: Include "now playing" info from EPG
     """
     cache = await get_cache()
     channels, total = await cache.get_channels(
@@ -36,12 +38,24 @@ async def list_channels(
         per_page=per_page
     )
     
+    # Optionally fetch "now playing" for each channel
+    now_playing = {}
+    if include_epg and channels:
+        channel_ids = [ch['id'] for ch in channels]
+        now_playing = await cache.get_now_playing_for_channels(channel_ids)
+        
+        # Attach to channels
+        for ch in channels:
+            if ch['id'] in now_playing:
+                ch['now_playing'] = now_playing[ch['id']]
+    
     return {
         "channels": channels,
         "total": total,
         "page": page,
         "per_page": per_page,
-        "has_more": (page * per_page) < total
+        "has_more": (page * per_page) < total,
+        "epg_count": len(now_playing)
     }
 
 
