@@ -1,0 +1,111 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+*.manifest
+*.spec
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database files (keep structure, not data)
+web/backend/data/*.db
+web/backend/data/*.xml
+!web/backend/data/.gitkeep
+
+# Node modules
+node_modules/
+.npm/
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.env
+.envrc
+secrets.json
+credentials.json
+
+# Cached data
+.cache/
+*.cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Test coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Build artifacts
+*.pyc
+*.pyo
+dist/
+build/
+
+# Temp files
+temp/
+tmp/
+*.tmp
+*.temp
+
+# Large media files that shouldn't be in repo
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.webm
+
+# EPG data (generated, not source)
+web/backend/data/epg/
+*_guide.xml
+
+# Package lock files (optional - uncomment if not needed)
+# package-lock.json
+# yarn.lock
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Husky
+.husky/_/
