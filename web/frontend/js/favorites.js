@@ -218,8 +218,9 @@ const Favorites = {
             this.history = this.history.slice(0, this.MAX_HISTORY);
         }
 
-        // Save
+        // Save and notify listeners
         Utils.storage.set(this.HISTORY_KEY, this.history);
+        this.notifyHistoryListeners();
     },
 
     /**
@@ -241,14 +242,20 @@ const Favorites = {
     },
 
     /**
-     * Export favorites as JSON
+     * Add history change listener
+     * Called when watch history is modified
      */
-    export() {
-        return JSON.stringify({
-            version: 1,
-            exported: new Date().toISOString(),
-            favorites: this.getAll()
-        }, null, 2);
+    historyListeners: [],
+
+    onHistoryChange(callback) {
+        this.historyListeners.push(callback);
+    },
+
+    /**
+     * Notify history listeners
+     */
+    notifyHistoryListeners() {
+        this.historyListeners.forEach(cb => cb(this.getHistory()));
     }
 };
 

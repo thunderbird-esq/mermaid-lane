@@ -269,8 +269,39 @@ const Player = {
     },
 
     onError(e) {
-        console.error('Video error:', this.player.error());
-        this.showError('Playback error');
+        const error = this.player.error();
+        console.error('Video error:', error);
+
+        // Provide specific error messages based on error code
+        let message = 'Playback error';
+
+        if (error) {
+            switch (error.code) {
+                case 1: // MEDIA_ERR_ABORTED
+                    message = 'Playback was aborted.';
+                    break;
+                case 2: // MEDIA_ERR_NETWORK
+                    message = 'Network error. Check your connection.';
+                    break;
+                case 3: // MEDIA_ERR_DECODE
+                    message = 'Stream format not supported.';
+                    break;
+                case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
+                    message = 'Stream unavailable or offline.';
+                    break;
+                case 1150: // YouTube embedding disabled
+                    message = 'This video cannot be played on external websites.';
+                    break;
+                default:
+                    if (error.message && error.message.includes('disabled by the video owner')) {
+                        message = 'This video cannot be played on external websites.';
+                    } else {
+                        message = 'Playback failed. Try another stream.';
+                    }
+            }
+        }
+
+        this.showError(message);
     },
 
     /**
