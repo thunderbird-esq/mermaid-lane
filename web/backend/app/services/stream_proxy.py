@@ -69,11 +69,14 @@ class StreamProxyService:
         except Exception as e:
             return {"status": "error", "message": str(e)}
     
-    async def proxy_manifest(self, stream_id: str, base_url: str) -> StreamingResponse:
+    async def proxy_manifest(self, stream_id: str, base_url: str, max_retries: int = 2) -> StreamingResponse:
         """
         Proxy HLS manifest and rewrite segment URLs.
         base_url is our API base for rewriting segment URLs.
+        Includes retry logic with exponential backoff.
         """
+        import asyncio
+        
         stream = await self.get_stream_info(stream_id)
         if not stream:
             raise HTTPException(status_code=404, detail="Stream not found")
@@ -81,36 +84,50 @@ class StreamProxyService:
         headers = self._build_headers(stream)
         stream_url = stream["url"]
         
-        try:
-            async with httpx.AsyncClient(
-                timeout=httpx.Timeout(self.CONNECT_TIMEOUT, read=self.READ_TIMEOUT)
-            ) as client:
-                response = await client.get(stream_url, headers=headers, follow_redirects=True)
-                response.raise_for_status()
-                
-                # Use final URL after redirects for resolving relative paths
-                final_url = str(response.url)
-                content = response.text
-                content_type = response.headers.get("content-type", "application/vnd.apple.mpegurl")
-                
-                # Rewrite URLs in manifest to go through our proxy
-                rewritten = self._rewrite_manifest(content, final_url, stream_id, base_url)
-                
-                return StreamingResponse(
-                    iter([rewritten.encode()]),
-                    media_type=content_type,
-                    headers={
-                        "Access-Control-Allow-Origin": "*",
-                        "Cache-Control": "no-cache, no-store, must-revalidate"
-                    }
-                )
-        except httpx.TimeoutException:
-            raise HTTPException(status_code=504, detail="Stream timed out")
-        except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=502, detail=f"Upstream error: {e.response.status_code}")
-        except Exception as e:
-            logger.error(f"Manifest proxy error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to proxy stream")
+        last_error = None
+        for attempt in range(max_retries + 1):
+            try:
+                async with httpx.AsyncClient(
+                    timeout=httpx.Timeout(self.CONNECT_TIMEOUT, read=self.READ_TIMEOUT)
+                ) as client:
+                    response = await client.get(stream_url, headers=headers, follow_redirects=True)
+                    response.raise_for_status()
+                    
+                    # Use final URL after redirects for resolving relative paths
+                    final_url = str(response.url)
+                    content = response.text
+                    content_type = response.headers.get("content-type", "application/vnd.apple.mpegurl")
+                    
+                    # Rewrite URLs in manifest to go through our proxy
+                    rewritten = self._rewrite_manifest(content, final_url, stream_id, base_url)
+                    
+                    return StreamingResponse(
+                        iter([rewritten.encode()]),
+                        media_type=content_type,
+                        headers={
+                            "Access-Control-Allow-Origin": "*",
+                            "Cache-Control": "no-cache, no-store, must-revalidate"
+                        }
+                    )
+            except httpx.TimeoutException as e:
+                last_error = e
+                if attempt < max_retries:
+                    wait_time = (2 ** attempt) * 0.5  # 0.5s, 1s, 2s...
+                    logger.warning(f"Stream {stream_id} timeout, retry {attempt + 1}/{max_retries} in {wait_time}s")
+                    await asyncio.sleep(wait_time)
+                    continue
+                raise HTTPException(status_code=504, detail="Stream timed out after retries")
+            except httpx.HTTPStatusError as e:
+                # Retry on 5xx errors only
+                if 500 <= e.response.status_code < 600 and attempt < max_retries:
+                    wait_time = (2 ** attempt) * 0.5
+                    logger.warning(f"Stream {stream_id} server error {e.response.status_code}, retry {attempt + 1}")
+                    await asyncio.sleep(wait_time)
+                    continue
+                raise HTTPException(status_code=502, detail=f"Upstream error: {e.response.status_code}")
+            except Exception as e:
+                logger.error(f"Manifest proxy error: {e}")
+                raise HTTPException(status_code=500, detail="Failed to proxy stream")
     
     def _rewrite_manifest(self, content: str, original_url: str, stream_id: str, base_url: str) -> str:
         """Rewrite manifest URLs to proxy through our API."""

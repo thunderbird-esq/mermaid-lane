@@ -78,8 +78,12 @@ async def test_stream(url: str, timeout: float = 10.0) -> dict:
             follow_redirects=True,
             verify=False,  # Some streams have bad certs
         ) as client:
-            # HEAD request is faster than GET for testing
+            # Try HEAD first (faster)
             response = await client.head(url)
+            
+            # Some servers (Pluto TV) return 405 for HEAD, try GET
+            if response.status_code == 405:
+                response = await client.get(url, headers={"Range": "bytes=0-0"})
             
             elapsed = (asyncio.get_event_loop().time() - start_time) * 1000
             result["response_time_ms"] = round(elapsed, 2)
@@ -88,7 +92,7 @@ async def test_stream(url: str, timeout: float = 10.0) -> dict:
             result["headers"] = dict(response.headers)
             
             # Categorize by status code
-            if response.status_code == 200:
+            if response.status_code in [200, 206]:  # 206 = Partial Content (from Range header)
                 result["category"] = "working"
             elif response.status_code == 403:
                 result["category"] = "geo_blocked"
