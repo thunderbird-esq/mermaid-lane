@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # Database
     database_path: str = "data/iptv_cache.db"
     
+    # Admin API key for protected endpoints
+    admin_api_key: str = "dev-admin-key"
+    
     # Pydantic V2 configuration
     model_config = SettingsConfigDict(env_prefix="IPTV_", env_file=".env")
 

@@ -139,13 +139,14 @@ async def trigger_sync(x_admin_key: Optional[str] = Query(None, alias="X-Admin-K
     Requires X-Admin-Key header or query parameter.
     Set IPTV_ADMIN_API_KEY environment variable to configure.
     """
-    import os
-    expected_key = os.getenv("IPTV_ADMIN_API_KEY", "dev-admin-key")
+    from app.config import get_settings
+    settings = get_settings()
     
-    if x_admin_key != expected_key:
+    if x_admin_key != settings.admin_api_key:
         raise HTTPException(status_code=401, detail="Invalid or missing admin API key")
     
     sync_service = get_sync_service()
     results = await sync_service.sync_all()
     return {"status": "completed", "synced": results}
+
 
