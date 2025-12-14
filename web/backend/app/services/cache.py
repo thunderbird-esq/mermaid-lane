@@ -137,23 +137,85 @@ class CacheService:
                 await db.execute("ALTER TABLE streams ADD COLUMN health_response_ms INTEGER")
             except Exception:
                 pass
+            
             try:
                 await db.execute("ALTER TABLE streams ADD COLUMN health_error TEXT")
+            except Exception:
+                pass
+            
+            # Migration: Add next_check_due for smart scheduling
+            try:
+                await db.execute("ALTER TABLE streams ADD COLUMN next_check_due TIMESTAMP")
+            except Exception:
+                pass
+            
+            # Migration: Add has_streams and stream_count to channels for playable filtering
+            try:
+                await db.execute("ALTER TABLE channels ADD COLUMN has_streams INTEGER DEFAULT 0")
+            except Exception:
+                pass
+            try:
+                await db.execute("ALTER TABLE channels ADD COLUMN stream_count INTEGER DEFAULT 0")
             except Exception:
                 pass
             
             # Indexes for common queries (after migration so columns exist)
             await db.execute("CREATE INDEX IF NOT EXISTS idx_channels_country ON channels(country)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_channels_categories ON channels(categories)")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_channels_has_streams ON channels(has_streams)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_streams_channel ON streams(channel_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_streams_health ON streams(health_status)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_logos_channel ON logos(channel_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_programs_channel ON programs(channel_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_programs_time ON programs(start_time, stop_time)")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_streams_next_check ON streams(next_check_due)")
             
             await db.commit()
     
     @staticmethod
+    def _is_epg_cache_valid() -> bool:
+        # Implementation in main EPG method
+        pass
+
+    # ... (other methods unchanged) ...
+
+    # ==================== STREAM HEALTH TRACKING ====================
+    
+    async def update_stream_health(
+        self, 
+        stream_id: str, 
+        status: str, 
+        response_ms: int = None, 
+        error: str = None,
+        next_check_due: str = None  # New: scheduling parameter
+    ):
+        """Update health status for a stream."""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("""
+                UPDATE streams 
+                SET health_status = ?,
+                    health_checked_at = datetime('now'),
+                    health_response_ms = ?,
+                    health_error = ?,
+                    next_check_due = ?
+                WHERE id = ?
+            """, (status, response_ms, error, next_check_due, stream_id))
+            await db.commit()
+    
+    async def get_unchecked_streams(self, limit: int = 50) -> list[dict]:
+        """Get streams due for a check (or never checked)."""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute("""
+                SELECT id, url, referrer, user_agent, channel_id, health_status
+                FROM streams
+                WHERE health_checked_at IS NULL
+                   OR health_checked_at < datetime('now', '-10 minutes')
+                ORDER BY health_checked_at ASC NULLS FIRST
+                LIMIT ?
+            """, (limit,))
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
     def _generate_key(prefix: str, params: dict) -> str:
         """Generate cache key from prefix and parameters."""
         param_str = json.dumps(params, sort_keys=True)
@@ -228,6 +290,7 @@ class CacheService:
         category: Optional[str] = None,
         provider: Optional[str] = None,
         search: Optional[str] = None,
+        playable_only: bool = True,  # New: filter to channels with streams
         page: int = 1,
         per_page: int = 50
     ) -> tuple[list[dict], int]:
@@ -235,6 +298,10 @@ class CacheService:
         async with aiosqlite.connect(self.db_path) as db:
             conditions = ["closed IS NULL"]  # Only active channels
             params = []
+            
+            # Default: only show channels with streams
+            if playable_only:
+                conditions.append("has_streams = 1")
             
             if country:
                 conditions.append("country = ?")
@@ -276,6 +343,32 @@ class CacheService:
             )
             rows = await cursor.fetchall()
             channels = [json.loads(row[0]) for row in rows]
+            
+            # Augment with health data for immediate UI feedback
+            if channels:
+                channel_ids = [c['id'] for c in channels]
+                placeholders = ','.join(['?'] * len(channel_ids))
+                
+                health_cursor = await db.execute(f"""
+                    SELECT channel_id, url, health_status, health_error 
+                    FROM streams 
+                    WHERE channel_id IN ({placeholders})
+                """, channel_ids)
+                health_rows = await health_cursor.fetchall()
+                
+                # Build lookup: (channel_id, url) -> {status, error}
+                health_map = {} 
+                for hr in health_rows:
+                    # distinct streams by channel_id + url
+                    health_map[(hr[0], hr[1])] = {'status': hr[2], 'error': hr[3]}
+                
+                # Inject directly into channel stream objects
+                for channel in channels:
+                    for stream in channel.get('streams', []):
+                        key = (channel['id'], stream['url'])
+                        if key in health_map:
+                            stream['health_status'] = health_map[key]['status']
+                            stream['health_error'] = health_map[key]['error']
             
             return channels, total
     
@@ -378,6 +471,33 @@ class CacheService:
                 "total_streams": total,
                 "channels_with_streams": channels_with_streams
             }
+    
+    async def update_channel_stream_counts(self):
+        """Update has_streams and stream_count for all channels based on streams table."""
+        async with aiosqlite.connect(self.db_path) as db:
+            # Reset all channels to 0
+            await db.execute("UPDATE channels SET has_streams = 0, stream_count = 0")
+            
+            # Update channels that have streams
+            await db.execute("""
+                UPDATE channels SET 
+                    has_streams = 1,
+                    stream_count = (
+                        SELECT COUNT(*) FROM streams 
+                        WHERE streams.channel_id = channels.id
+                    )
+                WHERE id IN (SELECT DISTINCT channel_id FROM streams WHERE channel_id IS NOT NULL)
+            """)
+            
+            await db.commit()
+            
+            # Return stats for logging
+            cursor = await db.execute("SELECT COUNT(*) FROM channels WHERE has_streams = 1")
+            playable = (await cursor.fetchone())[0]
+            cursor = await db.execute("SELECT COUNT(*) FROM channels")
+            total = (await cursor.fetchone())[0]
+            
+            return {"playable": playable, "total": total}
     
     async def get_providers(self) -> list[dict]:
         """Get unique stream providers extracted from M3U data."""
@@ -796,7 +916,7 @@ class CacheService:
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("""
-                SELECT id, channel_id, health_status, health_checked_at, health_response_ms
+                SELECT id, channel_id, health_status, health_error, health_checked_at, health_response_ms
                 FROM streams
                 WHERE health_checked_at > datetime('now', ?)
                 ORDER BY health_checked_at DESC

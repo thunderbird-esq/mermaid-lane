@@ -36,12 +36,13 @@ const API = {
     /**
      * Get channels with filtering and pagination
      */
-    async getChannels({ country, category, provider, search, includeEpg = true, page = 1, perPage = 50 } = {}) {
+    async getChannels({ country, category, provider, search, playableOnly = true, includeEpg = true, page = 1, perPage = 50 } = {}) {
         const params = new URLSearchParams();
         if (country) params.set('country', country);
         if (category) params.set('category', category);
         if (provider) params.set('provider', provider);
         if (search) params.set('search', search);
+        params.set('playable_only', playableOnly);
         if (includeEpg) params.set('include_epg', 'true');
         params.set('page', page);
         params.set('per_page', perPage);

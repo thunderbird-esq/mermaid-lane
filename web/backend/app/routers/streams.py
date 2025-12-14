@@ -5,6 +5,7 @@ All streams are proxied to hide original URLs.
 from fastapi import APIRouter, Request, Query, HTTPException
 from pathlib import Path
 from typing import Optional
+import aiosqlite
 
 from app.services.stream_proxy import get_proxy_service
 from app.services.cache import get_cache
@@ -133,10 +134,23 @@ async def get_stream_status(stream_id: str):
 @router.get("/stats")
 async def get_stream_stats():
     """
-    Get stream statistics.
+    Get stream statistics including playable channel counts.
     """
     cache = await get_cache()
-    return await cache.get_stream_stats()
+    stream_stats = await cache.get_stream_stats()
+    
+    # Get playable vs total channel counts
+    async with aiosqlite.connect(cache.db_path) as db:
+        cursor = await db.execute("SELECT COUNT(*) FROM channels WHERE has_streams = 1")
+        playable = (await cursor.fetchone())[0]
+        cursor = await db.execute("SELECT COUNT(*) FROM channels")
+        total = (await cursor.fetchone())[0]
+    
+    return {
+        **stream_stats,
+        "playable_channels": playable,
+        "total_channels": total
+    }
 
 
 @router.get("/health-updates")

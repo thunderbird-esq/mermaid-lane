@@ -10,7 +10,7 @@ import asyncio
 import json
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -135,11 +135,36 @@ class HealthWorker:
         
         # Update database
         for stream, result in zip(streams, results):
+            # Calculate next check time based on status/error
+            now = datetime.now()
+            status = result["status"]
+            error = result.get("error", "") or ""
+            
+            if status == "working":
+                # Re-check working streams every 6 hours
+                next_check = now + timedelta(hours=6)
+            elif status == "warning":
+                # Geo-blocked (403): Re-check weekly
+                next_check = now + timedelta(days=7)
+            elif "404" in error or "Not Found" in error:
+                # Dead link: Re-check weekly
+                next_check = now + timedelta(days=7)
+            elif "Timeout" in error:
+                # Timeout: Re-check in 1 hour
+                next_check = now + timedelta(hours=1)
+            elif "Connection refused" in error:
+                # Offline: Re-check daily
+                next_check = now + timedelta(days=1)
+            else:
+                # Default failure: Re-check in 1 hour
+                next_check = now + timedelta(hours=1)
+
             await cache.update_stream_health(
                 stream_id=stream["id"],
                 status=result["status"],
                 response_ms=result.get("response_ms"),
-                error=result.get("error")
+                error=result.get("error"),
+                next_check_due=next_check
             )
             
             self._stats["total_tested"] += 1

@@ -67,6 +67,12 @@ class DataSyncService:
             await cache.store_streams(streams)
             results["streams"] = len(streams)
             logger.info(f"Synced {len(streams)} streams")
+            
+            # Update has_streams and stream_count for all channels
+            counts = await cache.update_channel_stream_counts()
+            results["playable_channels"] = counts["playable"]
+            results["total_channels"] = counts["total"]
+            logger.info(f"📺 Playable channels: {counts['playable']} / {counts['total']} total")
         
         # Fetch logos
         logos = await self.fetch_endpoint(self.ENDPOINTS["logos"])

@@ -15,6 +15,7 @@ async def list_channels(
     category: Optional[str] = Query(None, description="Filter by category (e.g., news, sports)"),
     provider: Optional[str] = Query(None, description="Filter by stream provider (e.g., pluto, roku)"),
     search: Optional[str] = Query(None, description="Search in channel names"),
+    playable_only: bool = Query(True, description="Only show channels with available streams"),
     include_epg: bool = Query(False, description="Include now playing info from EPG"),
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(50, ge=1, le=100, description="Results per page"),
@@ -26,6 +27,7 @@ async def list_channels(
     - **category**: Category ID from /api/categories
     - **provider**: Stream provider (pluto, roku, samsung, etc.)
     - **search**: Search term for channel name
+    - **playable_only**: Only show channels with streams (default: true)
     - **include_epg**: Include "now playing" info from EPG
     """
     cache = await get_cache()
@@ -34,6 +36,7 @@ async def list_channels(
         category=category,
         provider=provider,
         search=search,
+        playable_only=playable_only,
         page=page,
         per_page=per_page
     )

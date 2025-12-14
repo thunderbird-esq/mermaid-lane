@@ -10,6 +10,7 @@ const Channels = {
     currentPage: 1,
     hasMore: true,
     loading: false,
+    showAllChannels: false,  // Toggle for showing all vs playable only
 
     // Filters
     filters: {
@@ -67,6 +68,15 @@ const Channels = {
         this.elements.viewToggle.addEventListener('click', () => {
             this.elements.grid.classList.toggle('list-view');
         });
+
+        // Show all channels toggle
+        const showAllToggle = document.getElementById('show-all-toggle');
+        if (showAllToggle) {
+            showAllToggle.addEventListener('change', (e) => {
+                this.showAllChannels = e.target.checked;
+                this.resetAndReload();
+            });
+        }
 
         // Infinite scroll
         window.addEventListener('scroll', Utils.throttle(() => {
@@ -264,6 +274,7 @@ const Channels = {
                 country: this.filters.country,
                 category: this.filters.category,
                 search: this.filters.search || undefined,
+                playableOnly: !this.showAllChannels,
                 page: this.currentPage
             });
 
@@ -279,8 +290,11 @@ const Channels = {
             // Render new channels
             this.renderChannels(newChannels);
 
-            // Update count
-            this.elements.channelCount.textContent = `${data.total.toLocaleString()} channels`;
+            // Update count - show playable context when filtering
+            const countText = this.showAllChannels
+                ? `${data.total.toLocaleString()} channels (including ${(data.total - (data.playable || data.total)).toLocaleString()} without streams)`
+                : `${data.total.toLocaleString()} playable channels`;
+            this.elements.channelCount.textContent = countText;
 
             // Show/hide load more
             this.hasMore ? Utils.show(this.elements.loadMore) : Utils.hide(this.elements.loadMore);
@@ -309,20 +323,63 @@ const Channels = {
         });
     },
 
-    /**
-     * Get stream health indicator based on known geo-blocked patterns
-     */
     getStreamHealthIndicator(channel) {
-        // Countries with known geo-restrictions
+        const streams = channel.streams || [];
+
+        // 1. Check real health data first (if available from API)
+        let hasHealthData = false;
+        let bestStatus = null;
+        let bestPriority = 999;
+        let bestStream = null;
+
+        // Priority: working (1) > warning (2) > unknown (3) > failed (4)
+        // We want to show the status of the *best* working stream. 
+        // If one works, the channel is "working". If all fail, the channel is "failed".
+        const priority = { 'working': 1, 'warning': 2, 'unknown': 3, 'failed': 4 };
+
+        for (const stream of streams) {
+            if (stream.health_status) {
+                hasHealthData = true;
+                const p = priority[stream.health_status] || 999;
+                if (p < bestPriority) {
+                    bestPriority = p;
+                    bestStatus = stream.health_status;
+                    bestStream = stream;
+                }
+            }
+        }
+
+        if (hasHealthData) {
+            // If best stream is working, show no badge
+            if (bestStatus === 'working') return null;
+
+            const error = (bestStream?.health_error || '').toLowerCase();
+
+            if (bestStatus === 'warning' || error.includes('403') || error.includes('forbidden')) {
+                return { type: 'geo-blocked', emoji: '🔒', title: 'Geo-blocked or restricted' };
+            }
+            if (error.includes('404') || error.includes('not found')) {
+                return { type: 'dead', emoji: '💀', title: 'Stream unavailable (404)' };
+            }
+            if (error.includes('timeout')) {
+                return { type: 'timeout', emoji: '⏱️', title: 'Connection timeout - may be temporary' };
+            }
+            if (error.includes('connection refused') || error.includes('connect')) {
+                return { type: 'dead', emoji: '🔌', title: 'Server offline' };
+            }
+            if (bestStatus === 'failed') {
+                return { type: 'dead', emoji: '❌', title: bestStream?.health_error || 'Stream unavailable' };
+            }
+            return { type: 'unknown', emoji: '❓', title: 'Stream status unknown' };
+        }
+
+        // 2. Fallback to static patterns (for pre-scan or missing data)
         const geoBlockedCountries = ['cn', 'ir', 'kz'];
         const warningCountries = ['uk', 'in', 'br', 'ru'];
-
-        // URL patterns known to be geo-blocked
         const geoBlockedPatterns = [
             'bbc.co.uk', '.bbc.', 'akamaized.net/x=4/i=urn:bbc',
             'telewebion.com', 'kaztrk.kz'
         ];
-
         const warningPatterns = [
             '3catdirectes.cat', 'rtve.es', 'brasilstream',
             'cdnmedia.tv/canal', 'cdnmedia.tv/cristo'
@@ -330,35 +387,24 @@ const Channels = {
 
         const countryLower = (channel.country || '').toLowerCase();
 
-        // Check if country is known to be geo-blocked
         if (geoBlockedCountries.includes(countryLower)) {
             return { type: 'geo-blocked', emoji: '🔒', title: 'May require VPN (geo-restricted region)' };
         }
-
-        // Check if country has some geo-restrictions
         if (warningCountries.includes(countryLower)) {
             return { type: 'warning', emoji: '⚡', title: 'Some streams may be region-locked' };
         }
 
-        // Check streams for known patterns (if available)
-        const streams = channel.streams || [];
         for (const stream of streams) {
             const url = (stream.url || '').toLowerCase();
-
             for (const pattern of geoBlockedPatterns) {
-                if (url.includes(pattern)) {
-                    return { type: 'geo-blocked', emoji: '🔒', title: 'Stream may be geo-restricted' };
-                }
+                if (url.includes(pattern)) return { type: 'geo-blocked', emoji: '🔒', title: 'Stream may be geo-restricted' };
             }
-
             for (const pattern of warningPatterns) {
-                if (url.includes(pattern)) {
-                    return { type: 'warning', emoji: '⚡', title: 'Stream may require geo-bypass' };
-                }
+                if (url.includes(pattern)) return { type: 'warning', emoji: '⚡', title: 'Stream may require geo-bypass' };
             }
         }
 
-        return null;
+        return null; // Assume working or unknown
     },
 
     /**

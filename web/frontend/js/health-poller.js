@@ -74,9 +74,11 @@ const HealthPoller = {
 
             const channelUpdates = updatesByChannel[channelId];
             // Use best status among streams for this channel
-            const bestStatus = this.getBestStatus(channelUpdates);
+            const bestUpdate = this.getBestStatus(channelUpdates);
 
-            this.updateCardBadge(card, bestStatus);
+            if (bestUpdate) {
+                this.updateCardBadge(card, bestUpdate.health_status, bestUpdate.health_error);
+            }
         });
     },
 
@@ -93,7 +95,7 @@ const HealthPoller = {
             const p = priority[u.health_status] || 999;
             if (p < bestPriority) {
                 bestPriority = p;
-                best = u.health_status;
+                best = u;
             }
         });
 
@@ -103,7 +105,7 @@ const HealthPoller = {
     /**
      * Update or add badge to a channel card
      */
-    updateCardBadge(card, status) {
+    updateCardBadge(card, status, error) {
         // Remove existing indicator
         const existing = card.querySelector('.stream-health-indicator');
         if (existing) existing.remove();
@@ -115,21 +117,33 @@ const HealthPoller = {
         const badge = document.createElement('div');
         badge.className = 'stream-health-indicator';
 
-        switch (status) {
-            case 'warning':
-                badge.classList.add('warning');
-                badge.textContent = '⚡';
-                badge.title = 'Some streams may have issues';
-                break;
-            case 'failed':
-                badge.classList.add('geo-blocked');
-                badge.textContent = '❌';
-                badge.title = 'Stream currently unavailable';
-                break;
-            default:
-                badge.classList.add('unknown');
-                badge.textContent = '❓';
-                badge.title = 'Stream status unknown';
+        // Determine badge type based on error content
+        const errorLower = (error || '').toLowerCase();
+
+        if (status === 'warning' || errorLower.includes('403') || errorLower.includes('forbidden')) {
+            badge.classList.add('geo-blocked');
+            badge.textContent = '🔒';
+            badge.title = 'Geo-blocked or restricted';
+        } else if (errorLower.includes('404') || errorLower.includes('not found')) {
+            badge.classList.add('dead');
+            badge.textContent = '💀';
+            badge.title = 'Stream unavailable (404)';
+        } else if (errorLower.includes('timeout')) {
+            badge.classList.add('timeout');
+            badge.textContent = '⏱️';
+            badge.title = 'Connection timeout - may be temporary';
+        } else if (errorLower.includes('connection refused') || errorLower.includes('connect')) {
+            badge.classList.add('dead');
+            badge.textContent = '🔌';
+            badge.title = 'Server offline';
+        } else if (status === 'failed') {
+            badge.classList.add('dead');
+            badge.textContent = '❌';
+            badge.title = error || 'Stream unavailable';
+        } else {
+            badge.classList.add('unknown');
+            badge.textContent = '❓';
+            badge.title = 'Status unknown';
         }
 
         card.insertBefore(badge, card.firstChild);
