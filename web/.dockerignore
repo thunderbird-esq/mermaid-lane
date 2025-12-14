@@ -1,0 +1,35 @@
+# Ignore git
+.git
+.gitignore
+
+# Ignore Python caches
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.coverage
+htmlcov
+*.egg-info
+
+# Ignore virtual environments
+venv
+.venv
+backend/venv
+
+# Ignore local data
+backend/data
+data
+
+# Ignore tests (not needed in production)
+backend/tests
+
+# Ignore development files
+*.md
+.env
+.env.*
+!.env.example
+
+# Ignore IDE files
+.idea
+.vscode
+*.swp
