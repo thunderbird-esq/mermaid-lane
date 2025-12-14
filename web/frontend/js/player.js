@@ -176,11 +176,16 @@ const Player = {
             this.loadingTimeout = null;
         }
 
-        // Set loading timeout (15 seconds)
+        // Check for YouTube URL early to set appropriate timeout
+        const isYouTube = stream.url.includes('youtube.com') || stream.url.includes('youtu.be');
+
+        // Set loading timeout (30s for YouTube, 15s for HLS)
+        // YouTube takes longer due to iframe initialization
+        const timeoutMs = isYouTube ? 30000 : 15000;
         this.loadingTimeout = setTimeout(() => {
-            console.error('[Player] Loading timeout after 15 seconds');
+            console.error(`[Player] Loading timeout after ${timeoutMs / 1000} seconds`);
             this.showError('Stream took too long to load. Try another stream.');
-        }, 15000);
+        }, timeoutMs);
 
         // Update active stream in list
         this.elements.streamList.querySelectorAll('.stream-option').forEach(btn => {
@@ -193,8 +198,7 @@ const Player = {
         // Define type variable
         let type = 'application/x-mpegURL';
 
-        // Check for YouTube URL
-        const isYouTube = stream.url.includes('youtube.com') || stream.url.includes('youtu.be');
+        // isYouTube already defined above for timeout logic
         console.log('[Player] Is YouTube:', isYouTube);
 
         if (isYouTube) {
