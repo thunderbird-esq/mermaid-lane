@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2025-12-14
+
+### Added
+- **Dynamic timeout** - YouTube streams get 30s timeout (vs 15s for HLS)
+- **Watch history listeners** - `onHistoryChange()` method in Favorites module
+
+### Fixed
+- **Specific error messages** for player errors:
+  - YouTube embedding disabled: "This video cannot be played on external websites"
+  - Network errors, decode errors, source not supported - all have specific messages
+- **Missing onHistoryChange** method referenced in app.js but didn't exist
+- **Duplicate export() method** removed from favorites.js
+
 ## [1.3.0] - 2025-12-14
 
 ### Fixed
