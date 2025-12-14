@@ -236,7 +236,10 @@ const Player = {
             }
         };
 
+        // Listen to both 'playing' and 'play' events
+        // YouTube tech may not fire 'playing' but does fire 'play'
         this.player.one('playing', clearTimeoutOnSuccess);
+        this.player.one('play', clearTimeoutOnSuccess);
         this.player.one('error', clearTimeoutOnError);
 
         try {
@@ -317,12 +320,22 @@ const Player = {
             this.loadingTimeout = null;
         }
 
+        // Track if we're on YouTube tech (doesn't support full reset)
+        const isYouTubeTech = this.currentStream &&
+            (this.currentStream.url.includes('youtube.com') ||
+                this.currentStream.url.includes('youtu.be'));
+
         try {
             this.player.pause();
-            // Use reset() instead of src('') to avoid MEDIA_ERR_SRC_NOT_SUPPORTED
-            this.player.reset();
+
+            // YouTube tech doesn't support reset() - only pause
+            // reset() causes: "defaultPlaybackRate method not defined for Youtube"
+            if (!isYouTubeTech) {
+                this.player.reset();
+            }
         } catch (e) {
-            console.warn('[Player] Error during reset:', e.message);
+            // Silently ignore - these are expected for some techs
+            console.debug('[Player] Close cleanup:', e.message);
         }
 
         // Hide modal
