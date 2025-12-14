@@ -164,7 +164,7 @@ class StreamProxyService:
             line = re.sub(pattern, f'URI="{proxy_url}"', line)
         return line
     
-    async def proxy_segment(self, stream_id: str, encoded_url: str) -> StreamingResponse:
+    async def proxy_segment(self, stream_id: str, encoded_url: str, base_url: str = "") -> StreamingResponse:
         """Proxy a stream segment OR a nested playlist."""
         import base64
         from urllib.parse import urlparse
@@ -184,10 +184,6 @@ class StreamProxyService:
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(self.CONNECT_TIMEOUT, read=self.READ_TIMEOUT)
             ) as client:
-                # First, we need to know the content type to decide how to handle it
-                # We can't really stream if we need to rewrite, so we fetch headers first
-                # But to save latency, let's just GET it and check headers
-                
                 response = await client.get(segment_url, headers=headers, follow_redirects=True)
                 response.raise_for_status()
                 
@@ -195,44 +191,11 @@ class StreamProxyService:
                 
                 # Check if this is a nested playlist (m3u8)
                 if "mpegurl" in content_type or segment_url.endswith('.m3u8'):
-                    # It's a nested playlist! Rewrite it.
-                    # We need the base_url. For now, we reconstruct it from the request if possible
-                    # But wait, proxy_segment doesn't get request object with base_url.
-                    # We have a problem: we need the API base URL to rewrite nested links.
-                    
-                    # Workaround: Assume standard local pattern or try to extract from current call context
-                    # Ideally passed in. But for now, let's reconstruct relative to /api/streams
-                    # A better way is to simply NOT rewrite if we can't, but we MUST rewrite relative links.
-                    
-                    # Hack: The client (browser) knows the base URL.
-                    # We can use a relative proxy path like "../../segment/" 
-                    # URLs in the manifest rewritten as: "../segment/{encoded}"
-                    
-                    # Let's inspect the stream_id to find where we are
-                    # If we don't know the hostname, we can use relative paths for the proxy API
-                    # The proxy URL format is /api/streams/{stream_id}/segment/{encoded}
-                    # If we are returning a playlist from /api/streams/{stream_id}/segment/{encoded_parent},
-                    # then "segment/{encoded_child}" is a sibling.
-                    # So we can use just "{encoded_child}" if the browser resolves typical HLS?
-                    # No, browser treats last part as filename.
-                    # Current URL: .../segment/{encoded_parent}
-                    # We want: .../segment/{encoded_child}
-                    # So rewriting to just "{encoded_child}" works! 
-                    # Wait, no. The browser thinks the current directory is .../segment/
-                    # So if we link to "{encoded_child}", it goes to .../segment/{encoded_child}. Correct!
-                    
-                    # But wait, the rewritten line in _rewrite_manifest uses full URL:
-                    # proxy_url = f"{base_url}/api/streams/{stream_id}/segment/{encoded_url}"
-                    # We need to change _rewrite_manifest to support relative rewriting or we need base_url.
-                    
-                    # Let's change this method signature in next step? 
-                    # No, let's just make a modified rewrite for nested lists.
-                    
                     content = response.text
                     final_url = str(response.url)
                     
-                    # Custom rewrite for nested playlists that uses relative paths
-                    rewritten = self._rewrite_nested_manifest(content, final_url)
+                    # Rewrite nested playlist with absolute proxy URLs
+                    rewritten = self._rewrite_nested_manifest(content, final_url, stream_id, base_url)
                     
                     return StreamingResponse(
                         iter([rewritten.encode()]),
@@ -268,8 +231,8 @@ class StreamProxyService:
             logger.error(f"Segment proxy error: {e}")
             raise HTTPException(status_code=500, detail="Failed to proxy segment")
 
-    def _rewrite_nested_manifest(self, content: str, original_url: str) -> str:
-        """Rewrite nested manifest with relative proxy URLs."""
+    def _rewrite_nested_manifest(self, content: str, original_url: str, stream_id: str = "", base_url: str = "") -> str:
+        """Rewrite nested manifest with absolute proxy URLs."""
         from urllib.parse import urljoin, urlparse
         import base64
         
@@ -286,7 +249,9 @@ class StreamProxyService:
                 continue
             
             if line.startswith('#'):
-                # Handle keys if needed (skipping for brevity, complex relative paths)
+                # Handle URI= attributes (like encryption keys)
+                if 'URI="' in line:
+                    line = self._rewrite_uri_attribute(line, url_base, stream_id, base_url)
                 rewritten_lines.append(line)
             else:
                 if line.startswith('http'):
@@ -295,8 +260,14 @@ class StreamProxyService:
                     full_url = urljoin(url_base, line)
                 
                 encoded_url = base64.urlsafe_b64encode(full_url.encode()).decode()
-                # Use relative path since we are already at .../segment/
-                rewritten_lines.append(encoded_url)
+                
+                # Use absolute proxy URL if base_url is available, otherwise relative
+                if base_url and stream_id:
+                    proxy_url = f"{base_url}/api/streams/{stream_id}/segment/{encoded_url}"
+                    rewritten_lines.append(proxy_url)
+                else:
+                    # Fallback to relative (may not work with all players)
+                    rewritten_lines.append(encoded_url)
         
         return '\n'.join(rewritten_lines)
 

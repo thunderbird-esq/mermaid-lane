@@ -111,13 +111,14 @@ async def get_local_segment(stream_id: str, filename: str):
 
 
 @router.get("/{stream_id}/segment/{encoded_url:path}")
-async def get_stream_segment(stream_id: str, encoded_url: str):
+async def get_stream_segment(stream_id: str, encoded_url: str, request: Request):
     """
-    Proxy an HLS segment.
+    Proxy an HLS segment or nested playlist.
     The encoded_url is a base64-encoded original segment URL.
     """
     proxy = get_proxy_service()
-    return await proxy.proxy_segment(stream_id, encoded_url)
+    base_url = str(request.base_url).rstrip('/')
+    return await proxy.proxy_segment(stream_id, encoded_url, base_url)
 
 
 @router.get("/{stream_id}/status")

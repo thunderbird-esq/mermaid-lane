@@ -32,9 +32,10 @@ const Player = {
 
         // Initialize plugins when player is ready
         this.player.ready(() => {
-            if (this.player.httpSourceSelector) {
-                this.player.httpSourceSelector();
-            }
+            // NOTE: httpSourceSelector is disabled due to incompatibility with Video.js 8
+            // It causes: "TypeError: Class constructor Qi cannot be invoked without 'new'"
+            // TODO: Find a compatible quality selector plugin for Video.js 8
+            console.log('[Player] Ready - quality selector disabled (Video.js 8 compatibility)');
         });
 
         this.elements = {
@@ -310,8 +311,19 @@ const Player = {
      * Close the player
      */
     close() {
-        this.player.pause();
-        this.player.src(''); // Unload
+        // Clear any pending timeout
+        if (this.loadingTimeout) {
+            clearTimeout(this.loadingTimeout);
+            this.loadingTimeout = null;
+        }
+
+        try {
+            this.player.pause();
+            // Use reset() instead of src('') to avoid MEDIA_ERR_SRC_NOT_SUPPORTED
+            this.player.reset();
+        } catch (e) {
+            console.warn('[Player] Error during reset:', e.message);
+        }
 
         // Hide modal
         Utils.hide(this.elements.modal);
