@@ -303,8 +303,11 @@ const Channels = {
             console.error('Failed to load channels:', error);
             if (this.currentPage === 1) {
                 this.elements.grid.innerHTML = `
-                    <div class="loading-container">
-                        <p>Failed to load channels. Please try again.</p>
+                    <div class="loading-container error-state">
+                        <p class="error-icon">⚠️</p>
+                        <p>Failed to load channels.</p>
+                        <p class="error-detail">${Utils.escapeHtml(error.message || 'Network error')}</p>
+                        <button class="retry-btn" onclick="Channels.resetAndReload()">Retry</button>
                     </div>
                 `;
             }

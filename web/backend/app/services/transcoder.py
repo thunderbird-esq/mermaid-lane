@@ -6,7 +6,7 @@ import shutil
 import signal
 from pathlib import Path
 from typing import Optional, Dict
-from datetime import datetime
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +122,38 @@ class TranscoderService:
         """Check if playlist is generated."""
         path = await self.get_manifest_path(stream_id)
         return path is not None and path.exists()
+    
+    async def cleanup_stale_transcodes(self, max_age_minutes: int = 5) -> int:
+        """
+        Clean up transcodes that haven't been accessed recently.
+        Returns number of transcodes cleaned up.
+        """
+        cleaned = 0
+        cutoff = datetime.now() - timedelta(minutes=max_age_minutes)
+        
+        # Check all tracked transcodes
+        stale_ids = [
+            stream_id for stream_id, last_access in self._last_access.items()
+            if last_access < cutoff
+        ]
+        
+        for stream_id in stale_ids:
+            logger.info(f"Cleaning up stale transcode: {stream_id}")
+            await self.stop_transcode(stream_id)
+            cleaned += 1
+        
+        # Also clean up orphaned directories (not in our tracking)
+        if self.TRANSCODE_DIR.exists():
+            for stream_dir in self.TRANSCODE_DIR.iterdir():
+                if stream_dir.is_dir() and stream_dir.name not in self._processes:
+                    try:
+                        shutil.rmtree(stream_dir)
+                        cleaned += 1
+                        logger.info(f"Cleaned orphaned transcode dir: {stream_dir.name}")
+                    except Exception as e:
+                        logger.error(f"Error cleaning orphaned dir {stream_dir}: {e}")
+        
+        return cleaned
 
 # Singleton
 _transocoder_service: Optional[TranscoderService] = None

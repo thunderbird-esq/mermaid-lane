@@ -527,9 +527,8 @@ class CacheService:
     
     # Categories and countries
     async def store_categories(self, categories: list[dict]):
-        """Store categories with channel counts."""
+        """Store categories with channel counts using upsert pattern."""
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("DELETE FROM categories")
             for cat in categories:
                 # Count channels in this category
                 count_cursor = await db.execute(
@@ -539,7 +538,7 @@ class CacheService:
                 count = (await count_cursor.fetchone())[0]
                 
                 await db.execute(
-                    """INSERT INTO categories (id, name, description, channel_count)
+                    """INSERT OR REPLACE INTO categories (id, name, description, channel_count)
                        VALUES (?, ?, ?, ?)""",
                     (cat.get("id"), cat.get("name"), cat.get("description"), count)
                 )
@@ -558,9 +557,8 @@ class CacheService:
             ]
     
     async def store_countries(self, countries: list[dict]):
-        """Store countries with channel counts."""
+        """Store countries with channel counts using upsert pattern."""
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("DELETE FROM countries")
             for country in countries:
                 # Count channels in this country
                 count_cursor = await db.execute(
@@ -570,7 +568,7 @@ class CacheService:
                 count = (await count_cursor.fetchone())[0]
                 
                 await db.execute(
-                    """INSERT INTO countries (code, name, languages, flag, channel_count)
+                    """INSERT OR REPLACE INTO countries (code, name, languages, flag, channel_count)
                        VALUES (?, ?, ?, ?, ?)""",
                     (
                         country.get("code"),
