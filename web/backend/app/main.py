@@ -124,7 +124,11 @@ async def get_stats():
 
 # Note: Stream-specific stats at /api/streams/stats
 # Serve frontend static files
-frontend_path = Path(__file__).parent.parent.parent / "frontend"
+# Check Docker path first, then fall back to relative path
+frontend_path = Path("/app/frontend")
+if not frontend_path.exists():
+    # Development: path relative to backend
+    frontend_path = Path(__file__).parent.parent.parent / "frontend"
 
 if frontend_path.exists():
     app.mount("/assets", StaticFiles(directory=frontend_path / "assets"), name="assets")
