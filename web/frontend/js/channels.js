@@ -429,8 +429,11 @@ const Channels = {
             progressPercent = Math.min(100, Math.max(0, ((now - start) / (stop - start)) * 100));
         }
 
+        // Determine if channel has no streams (only relevant when showing all)
+        const hasNoStreams = this.showAllChannels && channel.stream_count === 0;
+
         const card = Utils.createElement('article', {
-            className: 'channel-card' + (nowPlaying ? ' has-epg' : ''),
+            className: 'channel-card' + (nowPlaying ? ' has-epg' : '') + (hasNoStreams ? ' no-streams' : ''),
             dataset: { channelId: channel.id },
             onClick: () => this.openChannel(channel.id)
         }, [

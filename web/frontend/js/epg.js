@@ -139,7 +139,14 @@ const EPG = {
             this.renderEPG(data);
         } catch (error) {
             console.error('Failed to load EPG:', error);
-            this.elements.grid.innerHTML = '<p class="epg-message">Failed to load program guide.</p>';
+            this.elements.grid.innerHTML = `
+                <div class="loading-container error-state">
+                    <p class="error-icon">📺</p>
+                    <p>Failed to load program guide.</p>
+                    <p class="error-detail">${Utils.escapeHtml(error.message || 'Network error')}</p>
+                    <button class="retry-btn" onclick="EPG.loadEPGForVisibleChannels()">Retry</button>
+                </div>
+            `;
         }
     },
 

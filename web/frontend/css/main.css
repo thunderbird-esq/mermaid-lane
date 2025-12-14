@@ -520,6 +520,27 @@ img {
     border-color: rgba(99, 102, 241, 0.3);
 }
 
+.channel-card.no-streams {
+    opacity: 0.5;
+    border-style: dashed;
+    border-color: var(--border-color);
+}
+
+.channel-card.no-streams:hover {
+    opacity: 0.7;
+}
+
+.channel-card.no-streams::after {
+    content: 'No stream';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    color: var(--text-muted);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
 
 /* ===== Favorite Buttons ===== */
 .favorite-btn {
@@ -638,6 +659,23 @@ img {
     color: var(--text-muted);
     margin: 8px 0 16px;
     opacity: 0.7;
+}
+
+.retry-btn {
+    padding: 10px 24px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.retry-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
 }
 
 .loading-spinner {

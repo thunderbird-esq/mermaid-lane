@@ -256,6 +256,27 @@ class CacheService:
             )
             await db.commit()
     
+    async def vacuum_database(self) -> dict:
+        """
+        Vacuum the database to reclaim disk space.
+        Should be called periodically (e.g., weekly).
+        Returns stats about the operation.
+        """
+        import os
+        size_before = os.path.getsize(self.db_path) if os.path.exists(self.db_path) else 0
+        
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("VACUUM")
+        
+        size_after = os.path.getsize(self.db_path)
+        reclaimed = size_before - size_after
+        
+        return {
+            "size_before_mb": round(size_before / 1024 / 1024, 2),
+            "size_after_mb": round(size_after / 1024 / 1024, 2),
+            "reclaimed_mb": round(reclaimed / 1024 / 1024, 2)
+        }
+    
     # Channel-specific methods
     async def store_channels(self, channels: list[dict]):
         """Bulk store/update channels using upsert pattern."""

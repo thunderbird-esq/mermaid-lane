@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     
     # API Configuration
     app_name: str = "IPTV Web"
-    app_version: str = "0.1.0"
+    app_version: str = "0.2.0"
     debug: bool = False
     
     # Server Configuration
@@ -19,11 +19,12 @@ class Settings(BaseSettings):
     port: int = 8000
     
     # CORS Configuration
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8000"]
+    # Default allows all origins for development; set IPTV_CORS_ORIGINS for production
+    cors_origins: list[str] = ["*"]
     
     # Rate Limiting
     rate_limit_per_minute: int = 100
-    stream_rate_limit_per_minute: int = 20
+    stream_rate_limit_per_minute: int = 30
     
     # Data Sources (iptv-org API)
     iptv_api_base: str = "https://iptv-org.github.io/api"
@@ -31,6 +32,9 @@ class Settings(BaseSettings):
     # Cache Configuration
     cache_ttl_seconds: int = 3600  # 1 hour
     epg_cache_days: int = 7
+    
+    # Sync Configuration
+    sync_interval_hours: int = 24  # Auto re-sync interval (0 = disabled)
     
     # Database
     database_path: str = "data/iptv_cache.db"

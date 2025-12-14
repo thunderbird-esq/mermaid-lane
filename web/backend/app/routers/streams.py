@@ -13,12 +13,20 @@ from app.services.m3u_parser import import_m3u_directory
 from app.services.transcoder import get_transcoder_service
 
 import logging
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+from app.config import get_settings
+
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
 router = APIRouter(prefix="/api/streams", tags=["streams"])
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/{stream_id}/play.m3u8")
+@limiter.limit(f"{settings.stream_rate_limit_per_minute}/minute")
 async def get_stream_manifest(stream_id: str, request: Request):
     """
     Get proxied HLS manifest for a stream.
