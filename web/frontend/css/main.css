@@ -989,3 +989,176 @@ img {
 .channel-card {
     position: relative;
 }
+
+/* ===== Responsive Design ===== */
+
+/* Tablets and smaller desktops */
+@media (max-width: 1024px) {
+    .channel-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 12px;
+    }
+
+    .sidebar {
+        width: 220px;
+    }
+}
+
+/* Mobile landscape and tablets */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 40vh;
+        overflow-y: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .main-content {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .channel-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .channel-card {
+        padding: 12px;
+    }
+
+    .channel-card .channel-logo {
+        width: 48px;
+        height: 48px;
+    }
+
+    .search-container {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .search-container input {
+        width: 100%;
+    }
+
+    .header-actions {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    /* EPG panel full width on mobile */
+    .epg-panel {
+        width: 100%;
+        right: 0;
+    }
+}
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+    .channel-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .channel-card {
+        padding: 10px;
+    }
+
+    .channel-card .channel-name {
+        font-size: 13px;
+    }
+
+    .channel-card .channel-category {
+        font-size: 11px;
+    }
+
+    .channel-card .channel-logo {
+        width: 40px;
+        height: 40px;
+    }
+
+    .sidebar {
+        max-height: 30vh;
+    }
+
+    .filter-section {
+        padding: 12px;
+    }
+
+    /* Stack filter buttons */
+    .filter-pills {
+        flex-direction: column;
+    }
+
+    /* Player modal adjustments */
+    .player-modal-content {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+    }
+
+    .player-header {
+        padding: 12px;
+    }
+
+    .player-controls {
+        padding: 8px;
+    }
+
+    /* Hide toggle label on small screens */
+    .toggle-label {
+        font-size: 11px;
+    }
+}
+
+/* Landscape orientation for mobile player */
+@media (max-height: 500px) and (orientation: landscape) {
+    .player-modal-content {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+    }
+
+    .player-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
+        z-index: 10;
+    }
+
+    .player-controls {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .channel-card:hover {
+        transform: none;
+    }
+
+    .channel-card:active {
+        transform: scale(0.98);
+    }
+
+    /* Larger touch targets */
+    .favorite-btn,
+    .player-control-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}

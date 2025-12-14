@@ -19,7 +19,7 @@ from app.config import get_settings
 from app.services.cache import get_cache
 from app.services.data_sync import get_sync_service
 from app.services.health_worker import get_health_worker
-from app.routers import channels, streams, epg
+from app.routers import channels, streams, epg, user
 
 # Configure logging
 logging.basicConfig(
@@ -91,6 +91,7 @@ app.add_middleware(
 app.include_router(channels.router)
 app.include_router(streams.router)
 app.include_router(epg.router)
+app.include_router(user.router)
 
 
 # API endpoints

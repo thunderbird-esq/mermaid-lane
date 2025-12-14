@@ -177,6 +177,119 @@ const API = {
      */
     async getHealthWorkerStatus() {
         return this.request('/api/streams/health-worker');
+    },
+
+    // ==================== User Data Methods ====================
+
+    /**
+     * Get device ID for user identification
+     */
+    getDeviceId() {
+        let deviceId = localStorage.getItem('iptv_device_id');
+        if (!deviceId) {
+            deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('iptv_device_id', deviceId);
+        }
+        return deviceId;
+    },
+
+    /**
+     * Get user's favorites
+     */
+    async getFavorites() {
+        return this.request('/api/user/favorites', {
+            headers: { 'X-Device-Id': this.getDeviceId() }
+        });
+    },
+
+    /**
+     * Add channel to favorites
+     */
+    async addFavorite(channelId) {
+        return this.request('/api/user/favorites', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Device-Id': this.getDeviceId()
+            },
+            body: JSON.stringify({ channel_id: channelId })
+        });
+    },
+
+    /**
+     * Remove channel from favorites
+     */
+    async removeFavorite(channelId) {
+        return this.request(`/api/user/favorites/${channelId}`, {
+            method: 'DELETE',
+            headers: { 'X-Device-Id': this.getDeviceId() }
+        });
+    },
+
+    /**
+     * Check if channel is favorite
+     */
+    async isFavorite(channelId) {
+        return this.request(`/api/user/favorites/${channelId}/check`, {
+            headers: { 'X-Device-Id': this.getDeviceId() }
+        });
+    },
+
+    /**
+     * Record watch event
+     */
+    async recordWatch(channelId, streamId = null, durationSeconds = 0) {
+        return this.request('/api/user/watch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Device-Id': this.getDeviceId()
+            },
+            body: JSON.stringify({
+                channel_id: channelId,
+                stream_id: streamId,
+                duration_seconds: durationSeconds
+            })
+        });
+    },
+
+    /**
+     * Get watch history
+     */
+    async getWatchHistory(limit = 20) {
+        return this.request(`/api/user/history?limit=${limit}`, {
+            headers: { 'X-Device-Id': this.getDeviceId() }
+        });
+    },
+
+    /**
+     * Get popular channels
+     */
+    async getPopularChannels(limit = 20) {
+        return this.request(`/api/user/popular?limit=${limit}`);
+    },
+
+    /**
+     * Export user data
+     */
+    async exportUserData() {
+        return this.request('/api/user/export', {
+            headers: { 'X-Device-Id': this.getDeviceId() }
+        });
+    },
+
+    /**
+     * Import user data
+     */
+    async importUserData(favorites) {
+        return this.request('/api/user/import', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Device-Id': this.getDeviceId()
+            },
+            body: JSON.stringify({ favorites })
+        });
     }
 };
 

@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     
     # API Configuration
     app_name: str = "IPTV Web"
-    app_version: str = "0.2.0"
+    app_version: str = "0.3.0"
     debug: bool = False
     
     # Server Configuration

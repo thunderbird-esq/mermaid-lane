@@ -124,6 +124,39 @@ class CacheService:
                 )
             """)
             
+            # User favorites table (device-fingerprint based)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS user_favorites (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    device_id TEXT NOT NULL,
+                    channel_id TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(device_id, channel_id)
+                )
+            """)
+            
+            # Watch history table
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS watch_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    device_id TEXT NOT NULL,
+                    channel_id TEXT NOT NULL,
+                    stream_id TEXT,
+                    watched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    duration_seconds INTEGER DEFAULT 0
+                )
+            """)
+            
+            # Channel popularity stats
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS channel_stats (
+                    channel_id TEXT PRIMARY KEY,
+                    view_count INTEGER DEFAULT 0,
+                    last_viewed_at TIMESTAMP,
+                    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
             # Migration: Add health columns to existing streams table (run BEFORE indexes)
             try:
                 await db.execute("ALTER TABLE streams ADD COLUMN health_status TEXT DEFAULT 'unknown'")
@@ -957,6 +990,136 @@ class CacheService:
             """)
             rows = await cursor.fetchall()
             return {row[0] or 'unknown': row[1] for row in rows}
+    
+    # ==================== User Data Methods ====================
+    
+    async def add_favorite(self, device_id: str, channel_id: str) -> bool:
+        """Add a channel to user's favorites."""
+        async with aiosqlite.connect(self.db_path) as db:
+            try:
+                await db.execute(
+                    "INSERT OR IGNORE INTO user_favorites (device_id, channel_id) VALUES (?, ?)",
+                    (device_id, channel_id)
+                )
+                await db.commit()
+                return True
+            except Exception:
+                return False
+    
+    async def remove_favorite(self, device_id: str, channel_id: str) -> bool:
+        """Remove a channel from user's favorites."""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                "DELETE FROM user_favorites WHERE device_id = ? AND channel_id = ?",
+                (device_id, channel_id)
+            )
+            await db.commit()
+            return True
+    
+    async def get_favorites(self, device_id: str) -> list[str]:
+        """Get list of favorite channel IDs for a device."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute(
+                "SELECT channel_id FROM user_favorites WHERE device_id = ? ORDER BY created_at DESC",
+                (device_id,)
+            )
+            rows = await cursor.fetchall()
+            return [row[0] for row in rows]
+    
+    async def is_favorite(self, device_id: str, channel_id: str) -> bool:
+        """Check if a channel is in favorites."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute(
+                "SELECT 1 FROM user_favorites WHERE device_id = ? AND channel_id = ?",
+                (device_id, channel_id)
+            )
+            return await cursor.fetchone() is not None
+    
+    async def record_watch(self, device_id: str, channel_id: str, stream_id: str = None, duration: int = 0):
+        """Record a watch history entry and update channel stats."""
+        async with aiosqlite.connect(self.db_path) as db:
+            # Add to watch history
+            await db.execute(
+                """INSERT INTO watch_history (device_id, channel_id, stream_id, duration_seconds) 
+                   VALUES (?, ?, ?, ?)""",
+                (device_id, channel_id, stream_id, duration)
+            )
+            
+            # Update channel stats (popularity)
+            await db.execute(
+                """INSERT INTO channel_stats (channel_id, view_count, last_viewed_at)
+                   VALUES (?, 1, CURRENT_TIMESTAMP)
+                   ON CONFLICT(channel_id) DO UPDATE SET
+                       view_count = view_count + 1,
+                       last_viewed_at = CURRENT_TIMESTAMP""",
+                (channel_id,)
+            )
+            
+            await db.commit()
+    
+    async def get_watch_history(self, device_id: str, limit: int = 20) -> list[dict]:
+        """Get recent watch history for a device."""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute(
+                """SELECT channel_id, stream_id, watched_at, duration_seconds
+                   FROM watch_history
+                   WHERE device_id = ?
+                   ORDER BY watched_at DESC
+                   LIMIT ?""",
+                (device_id, limit)
+            )
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
+    
+    async def get_popular_channels(self, limit: int = 20) -> list[dict]:
+        """Get most viewed channels."""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute(
+                """SELECT channel_id, view_count, last_viewed_at
+                   FROM channel_stats
+                   ORDER BY view_count DESC
+                   LIMIT ?""",
+                (limit,)
+            )
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
+    
+    async def get_recently_added_channels(self, hours: int = 168) -> list[str]:
+        """Get channel IDs added in the last N hours (default: 1 week)."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute(
+                """SELECT channel_id FROM channel_stats
+                   WHERE added_at > datetime('now', ?)
+                   ORDER BY added_at DESC""",
+                (f'-{hours} hours',)
+            )
+            rows = await cursor.fetchall()
+            return [row[0] for row in rows]
+    
+    async def export_user_data(self, device_id: str) -> dict:
+        """Export all user data for backup."""
+        favorites = await self.get_favorites(device_id)
+        history = await self.get_watch_history(device_id, limit=100)
+        
+        return {
+            "device_id": device_id,
+            "favorites": favorites,
+            "watch_history": history,
+            "exported_at": datetime.utcnow().isoformat()
+        }
+    
+    async def import_user_data(self, device_id: str, data: dict) -> dict:
+        """Import user data from backup."""
+        imported = {"favorites": 0, "history": 0}
+        
+        # Import favorites
+        for channel_id in data.get("favorites", []):
+            if await self.add_favorite(device_id, channel_id):
+                imported["favorites"] += 1
+        
+        return imported
 
 
 

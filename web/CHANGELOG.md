@@ -2,24 +2,54 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.5.0] - 2025-12-14
+## [0.3.0] - 2025-12-14 (Phase 1: Foundation)
 
-### Added - Phase 4 & 5
-- **API key protection** for `/api/sync` endpoint (X-Admin-Key header)
-- **5 new tests** for cache upsert behavior and admin endpoint security
-- **Docker deployment** - `docker-compose.yml` and `Dockerfile` with ffmpeg
-- **robots.txt** to prevent API endpoint indexing
-- **Environment variables documentation** in README
-- **Troubleshooting section** in README
+### Added - User Persistence
+- **Favorites Backend** - Server-side favorites storage with device fingerprint
+  - `user_favorites` table with device_id and channel_id
+  - `/api/user/favorites` endpoints (GET, POST, DELETE)
+  - Persistent across sessions and devices
+  
+- **Watch History** - Backend tracking of viewed channels
+  - `watch_history` table with timestamps and duration
+  - `/api/user/history` endpoint
+  - Player automatically records watch events
+  
+- **Popular Channels** - Track and surface most-viewed channels
+  - `channel_stats` table with view counts
+  - `/api/user/popular` endpoint sorted by popularity
+  
+- **Export/Import** - Backup and restore user data
+  - `/api/user/export` and `/api/user/import` endpoints
+  - JSON format for easy backup
+
+### Added - Mobile Experience
+- **Responsive CSS** - Complete mobile redesign
+  - 5 media query breakpoints (1024px, 768px, 480px, landscape, touch)
+  - Sidebar collapses to horizontal on mobile
+  - Channel grid adapts from 4-column to 2-column
+  - Player fullscreen in landscape mode
+  - Touch-optimized tap targets (44px minimum)
+
+### Added - Frontend API
+- **12 new API methods** in api.js for user data
+  - getDeviceId(), getFavorites(), addFavorite(), removeFavorite()
+  - isFavorite(), recordWatch(), getWatchHistory()
+  - getPopularChannels(), exportUserData(), importUserData()
+
+### Infrastructure
+- **New router**: `app/routers/user.py` with 10 endpoints
+- **3 new database tables**: user_favorites, watch_history, channel_stats
+- **12 new cache methods** for user data operations
 
 ### Changed
-- Removed unused `List` import from `streams.py`
-- Test count: 26 (was 21)
+- Version bump: 0.2.0 → 0.3.0
+- Player now records watch events to backend
+- Test count: 33 (unchanged, backend-only changes)
 
-### Security
-- `/api/sync` now requires `IPTV_ADMIN_API_KEY` environment variable
+---
 
-## [1.4.0] - 2025-12-14
+## [0.2.0] - 2025-12-14 (Critical Review Fixes)
 
 ### Added
 - **Dynamic timeout** - YouTube streams get 30s timeout (vs 15s for HLS)

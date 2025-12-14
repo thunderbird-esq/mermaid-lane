@@ -1,6 +1,45 @@
 # IPTV Web Application - Development Log
 
-## 2025-12-12
+## 2025-12-14
+
+### Session: Phase 1 Foundation (v0.3.0)
+
+**Goal**: User persistence, mobile experience, and discovery features.
+
+**User Persistence**:
+- Created 3 new database tables: `user_favorites`, `watch_history`, `channel_stats`
+- Added 12 new cache methods for user data operations
+- Built `app/routers/user.py` with 10 API endpoints
+- Device fingerprint-based identification (no accounts needed)
+- Test: Added favorite, retrieved it - persistence working
+
+**Mobile Experience**:
+- Added 5 responsive media queries (1024px, 768px, 480px, landscape, touch)
+- Sidebar collapses to horizontal on mobile
+- Channel grid adapts from 4-column to 2-column
+- Player goes fullscreen in landscape mode
+- Touch targets sized to 44px minimum
+
+**Frontend Integration**:
+- Added 12 new API methods in api.js
+- Player records watch events to backend
+- Device ID generated and stored in localStorage
+
+**Validation**:
+```bash
+# Favorites API test
+curl -X POST http://localhost:8000/api/user/favorites \
+  -H "X-Device-Id: test-device" \
+  -H "Content-Type: application/json" \
+  -d '{"channel_id": "BBCWorld.uk"}'
+# {"success": true, "channel_id": "BBCWorld.uk"}
+
+# Popular channels endpoint
+curl http://localhost:8000/api/user/popular?limit=5
+# {"channels": [...], "count": N}
+```
+
+---
 
 ### Session 4: EPG & Now Playing (v1.1.0)
 

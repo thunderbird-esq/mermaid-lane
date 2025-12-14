@@ -84,8 +84,11 @@ Open [http://localhost:8000](http://localhost:8000) in your browser.
 | `GET /api/countries` | List countries |
 | `GET /api/streams/{id}/play.m3u8` | Proxied HLS stream |
 | `GET /api/streams/health-stats` | Stream health statistics |
-| `GET /api/streams/health-worker` | Health worker status |
 | `GET /api/epg/{channel_id}` | EPG for channel |
+| `GET /api/user/favorites` | Get user favorites (X-Device-Id header) |
+| `POST /api/user/favorites` | Add favorite |
+| `GET /api/user/history` | Get watch history |
+| `GET /api/user/popular` | Popular channels by views |
 | `POST /api/sync?X-Admin-Key=KEY` | Trigger data sync (protected) |
 
 ## Troubleshooting

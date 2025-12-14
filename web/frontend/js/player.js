@@ -96,8 +96,15 @@ const Player = {
     async open(channel) {
         this.currentChannel = channel;
 
-        // Track in watch history
+        // Track in watch history (localStorage legacy + backend)
         Favorites.addToHistory(channel);
+
+        // Record to backend for persistence
+        try {
+            await API.recordWatch(channel.id, channel.streams?.[0]?.id);
+        } catch (e) {
+            console.log('Failed to record watch:', e);
+        }
 
         // Update UI info
         this.elements.title.textContent = channel.name;
