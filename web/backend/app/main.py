@@ -18,6 +18,7 @@ from slowapi.errors import RateLimitExceeded
 from app.config import get_settings
 from app.services.cache import get_cache
 from app.services.data_sync import get_sync_service
+from app.services.health_worker import get_health_worker
 from app.routers import channels, streams, epg
 
 # Configure logging
@@ -50,8 +51,15 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("Cache populated, skipping initial sync")
     
+    # Start background health worker
+    health_worker = get_health_worker()
+    await health_worker.start()
+    logger.info("Background health worker started")
+    
     yield
     
+    # Stop health worker
+    await health_worker.stop()
     logger.info("Shutting down IPTV Web Backend...")
 
 

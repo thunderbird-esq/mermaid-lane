@@ -155,6 +155,27 @@ const API = {
      */
     async triggerSync() {
         return this.request('/api/sync', { method: 'POST' });
+    },
+
+    /**
+     * Get recent stream health updates (for polling)
+     */
+    async getHealthUpdates(since = 60) {
+        return this.request(`/api/streams/health-updates?since=${since}`);
+    },
+
+    /**
+     * Get stream health statistics
+     */
+    async getHealthStats() {
+        return this.request('/api/streams/health-stats');
+    },
+
+    /**
+     * Get health worker status
+     */
+    async getHealthWorkerStatus() {
+        return this.request('/api/streams/health-worker');
     }
 };
 

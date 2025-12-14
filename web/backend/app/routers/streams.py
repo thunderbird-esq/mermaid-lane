@@ -139,6 +139,50 @@ async def get_stream_stats():
     return await cache.get_stream_stats()
 
 
+@router.get("/health-updates")
+async def get_health_updates(since: int = 60):
+    """
+    Get recently updated stream health statuses.
+    Used for real-time UI updates via polling.
+    
+    Args:
+        since: Seconds to look back (default 60)
+    """
+    cache = await get_cache()
+    updates = await cache.get_recent_health_updates(since_seconds=since)
+    return {
+        "updates": updates,
+        "count": len(updates),
+        "since_seconds": since
+    }
+
+
+@router.get("/health-stats")
+async def get_health_stats():
+    """
+    Get overall stream health statistics.
+    """
+    cache = await get_cache()
+    stats = await cache.get_health_stats()
+    
+    total = sum(stats.values())
+    return {
+        "stats": stats,
+        "total": total,
+        "percentages": {k: round(v / total * 100, 1) if total else 0 for k, v in stats.items()}
+    }
+
+
+@router.get("/health-worker")
+async def get_health_worker_status():
+    """
+    Get background health worker status.
+    """
+    from app.services.health_worker import get_health_worker
+    worker = get_health_worker()
+    return worker.get_stats()
+
+
 @router.post("/import/m3u")
 async def import_m3u_streams(
     countries: Optional[str] = Query(None, description="Comma-separated country codes (e.g., 'us,uk,ca')")

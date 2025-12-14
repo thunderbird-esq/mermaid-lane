@@ -66,7 +66,11 @@ class CacheService:
                     referrer TEXT,
                     user_agent TEXT,
                     quality TEXT,
-                    data TEXT NOT NULL
+                    data TEXT NOT NULL,
+                    health_status TEXT DEFAULT 'unknown',
+                    health_checked_at TIMESTAMP,
+                    health_response_ms INTEGER,
+                    health_error TEXT
                 )
             """)
             
@@ -120,10 +124,29 @@ class CacheService:
                 )
             """)
             
-            # Indexes for common queries
+            # Migration: Add health columns to existing streams table (run BEFORE indexes)
+            try:
+                await db.execute("ALTER TABLE streams ADD COLUMN health_status TEXT DEFAULT 'unknown'")
+            except Exception:
+                pass  # Column already exists
+            try:
+                await db.execute("ALTER TABLE streams ADD COLUMN health_checked_at TIMESTAMP")
+            except Exception:
+                pass
+            try:
+                await db.execute("ALTER TABLE streams ADD COLUMN health_response_ms INTEGER")
+            except Exception:
+                pass
+            try:
+                await db.execute("ALTER TABLE streams ADD COLUMN health_error TEXT")
+            except Exception:
+                pass
+            
+            # Indexes for common queries (after migration so columns exist)
             await db.execute("CREATE INDEX IF NOT EXISTS idx_channels_country ON channels(country)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_channels_categories ON channels(categories)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_streams_channel ON streams(channel_id)")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_streams_health ON streams(health_status)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_logos_channel ON logos(channel_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_programs_channel ON programs(channel_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_programs_time ON programs(start_time, stop_time)")
@@ -700,6 +723,99 @@ class CacheService:
         """Get stored EPG mappings."""
         result = await self.get('epg_mappings')
         return result or {}
+    
+    # ==================== STREAM HEALTH TRACKING ====================
+    
+    async def update_stream_health(
+        self, 
+        stream_id: str, 
+        status: str, 
+        response_ms: int = None, 
+        error: str = None
+    ):
+        """Update health status for a stream."""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("""
+                UPDATE streams 
+                SET health_status = ?,
+                    health_checked_at = datetime('now'),
+                    health_response_ms = ?,
+                    health_error = ?
+                WHERE id = ?
+            """, (status, response_ms, error, stream_id))
+            await db.commit()
+    
+    async def get_unchecked_streams(self, limit: int = 50) -> list[dict]:
+        """Get streams that haven't been health-checked yet or were checked long ago."""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute("""
+                SELECT id, url, referrer, user_agent, channel_id
+                FROM streams
+                WHERE health_checked_at IS NULL
+                   OR health_checked_at < datetime('now', '-1 hour')
+                ORDER BY health_checked_at ASC NULLS FIRST
+                LIMIT ?
+            """, (limit,))
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
+    
+    async def get_streams_by_health(self, channel_id: str = None) -> list[dict]:
+        """Get streams sorted by health status (working first)."""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            
+            query = """
+                SELECT id, url, channel_id, quality, health_status, 
+                       health_checked_at, health_response_ms
+                FROM streams
+            """
+            params = []
+            
+            if channel_id:
+                query += " WHERE channel_id = ?"
+                params.append(channel_id)
+            
+            query += """
+                ORDER BY 
+                    CASE health_status
+                        WHEN 'working' THEN 1
+                        WHEN 'unknown' THEN 2
+                        WHEN 'warning' THEN 3
+                        WHEN 'failed' THEN 4
+                    END,
+                    health_response_ms ASC NULLS LAST
+            """
+            
+            cursor = await db.execute(query, params)
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
+    
+    async def get_recent_health_updates(self, since_seconds: int = 60) -> list[dict]:
+        """Get streams that were health-checked recently (for real-time updates)."""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute("""
+                SELECT id, channel_id, health_status, health_checked_at, health_response_ms
+                FROM streams
+                WHERE health_checked_at > datetime('now', ?)
+                ORDER BY health_checked_at DESC
+            """, (f'-{since_seconds} seconds',))
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
+    
+    async def get_health_stats(self) -> dict:
+        """Get overall health statistics."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("""
+                SELECT 
+                    health_status,
+                    COUNT(*) as count
+                FROM streams
+                GROUP BY health_status
+            """)
+            rows = await cursor.fetchall()
+            return {row[0] or 'unknown': row[1] for row in rows}
 
 
 
