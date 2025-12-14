@@ -17,7 +17,7 @@ class StreamProxyService:
     """Service to securely proxy HLS streams."""
     
     # Timeout for stream requests
-    CONNECT_TIMEOUT = 10.0
+    CONNECT_TIMEOUT = 15.0
     READ_TIMEOUT = 30.0
     
     # Content types

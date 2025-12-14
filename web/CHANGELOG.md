@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2025-12-14
+
+### Added
+- **Debug Logging in Player** - Console logs for troubleshooting playback issues
+  - Logs stream URL, type, and YouTube detection
+  - Logs playback success/failure events
+  
+- **Loading Timeout** - 15-second timeout prevents infinite loading spinner
+  - User-friendly error message when stream fails to load
+  - Timeout clears automatically on success or error
+  
+- **Integration Tests** - 4 new tests for player/stream infrastructure
+  - YouTube URL detection test
+  - HLS manifest rewriting verification
+  - EXT header preservation test
+  - Timeout configuration verification
+  
+### Fixed
+- Duplicate "Initialize plugins" comment in player.js
+- Added proper `self` parameter to async test methods
+
+### Changed
+- Player now uses one-time event listeners for playback attempts
+- Test count increased from 17 to 21
+
 ## [1.1.0] - 2025-12-12
 
 ### Added

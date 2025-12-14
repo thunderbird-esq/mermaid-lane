@@ -30,8 +30,7 @@ const Player = {
             }
         });
 
-        // Initialize plugins
-        // Initialize plugins
+        // Initialize plugins when player is ready
         this.player.ready(() => {
             if (this.player.httpSourceSelector) {
                 this.player.httpSourceSelector();
@@ -166,8 +165,21 @@ const Player = {
      * Play a specific stream
      */
     async playStream(stream) {
+        console.log('[Player] playStream called:', stream.title, stream.url);
         this.currentStream = stream;
         this.showLoading();
+
+        // Clear any existing timeout
+        if (this.loadingTimeout) {
+            clearTimeout(this.loadingTimeout);
+            this.loadingTimeout = null;
+        }
+
+        // Set loading timeout (15 seconds)
+        this.loadingTimeout = setTimeout(() => {
+            console.error('[Player] Loading timeout after 15 seconds');
+            this.showError('Stream took too long to load. Try another stream.');
+        }, 15000);
 
         // Update active stream in list
         this.elements.streamList.querySelectorAll('.stream-option').forEach(btn => {
@@ -175,25 +187,65 @@ const Player = {
         });
 
         const streamUrl = API.getStreamUrl(stream.stream_id);
+        console.log('[Player] Stream URL:', streamUrl);
 
-        // Determine type based on URL (optional explicit type setting)
-        // Video.js usually detects automatically, but we can help it.
-        // Backend returns .m3u8 extension for HLS proxies.
+        // Define type variable
         let type = 'application/x-mpegURL';
-        if (streamUrl.includes('.mpd')) {
-            type = 'application/dash+xml';
+
+        // Check for YouTube URL
+        const isYouTube = stream.url.includes('youtube.com') || stream.url.includes('youtu.be');
+        console.log('[Player] Is YouTube:', isYouTube);
+
+        if (isYouTube) {
+            type = 'video/youtube';
+            console.log('[Player] Setting YouTube source:', stream.url);
+            // Use original URL for YouTube, not proxy
+            this.player.src({
+                src: stream.url,
+                type: type
+            });
+        } else {
+            // Standard HLS/DASH proxy
+            if (streamUrl.includes('.mpd')) {
+                type = 'application/dash+xml';
+            }
+            console.log('[Player] Setting HLS source:', streamUrl, 'type:', type);
+
+            // Load stream in Video.js
+            this.player.src({
+                src: streamUrl,
+                type: type
+            });
         }
 
-        // Load stream in Video.js
-        this.player.src({
-            src: streamUrl,
-            type: type
-        });
+        // Set up one-time event listeners for this playback attempt
+        const clearTimeoutOnSuccess = () => {
+            if (this.loadingTimeout) {
+                clearTimeout(this.loadingTimeout);
+                this.loadingTimeout = null;
+            }
+            console.log('[Player] Playback started successfully');
+            this.hideLoading();
+        };
+
+        const clearTimeoutOnError = () => {
+            if (this.loadingTimeout) {
+                clearTimeout(this.loadingTimeout);
+                this.loadingTimeout = null;
+            }
+        };
+
+        this.player.one('playing', clearTimeoutOnSuccess);
+        this.player.one('error', clearTimeoutOnError);
 
         try {
+            console.log('[Player] Calling player.play()...');
             await this.player.play();
+            console.log('[Player] play() promise resolved');
         } catch (e) {
-            console.warn('Playback failed to start automatically', e);
+            console.warn('[Player] Playback failed to start automatically:', e.message);
+            // Don't show error yet - browser autoplay policies may prevent this
+            // The 'playing' event will still fire if user clicks play manually
         }
     },
 

@@ -37,19 +37,17 @@ async def get_stream_manifest(stream_id: str, request: Request):
     
     is_hls = True
     url_lower = stream["url"].lower()
+    if "youtube.com" in url_lower or "youtu.be" in url_lower:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(stream["url"])
+
     if ".mpd" in url_lower or ".mp4" in url_lower:
         is_hls = False
     
     if is_hls:
-        try:
-            # Build base URL for rewriting segment URLs
-            base_url = str(request.base_url).rstrip('/')
-            return await proxy.proxy_manifest(stream_id, base_url)
-        except Exception:
-            # If proxy fails, fall back to transcoding?
-            # For now, let's assume if it failed it might need transcoding or is dead.
-            logger.warning(f"Proxy failed for {stream_id}, trying transcoder...")
-            pass
+        # Build base URL for rewriting segment URLs
+        base_url = str(request.base_url).rstrip('/')
+        return await proxy.proxy_manifest(stream_id, base_url)
 
     # Transcode path
     logger.info(f"Using transcoder for {stream_id}")

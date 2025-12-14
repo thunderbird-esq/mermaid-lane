@@ -231,3 +231,45 @@ npm test && npm run lint && npm run playlist:validate && npm run playlist:lint
 - See iptv/CONTRIBUTING.md for contribution guidelines
 - See iptv/FAQ.md for common questions
 - Check iptv/PLAYLISTS.md for playlist documentation
+
+---
+
+## CURRENT PRIORITY: IPTV Web Application
+
+### web/ Directory (Active Development)
+The `web/` directory contains a full-stack IPTV streaming web application:
+
+**Backend (Python/FastAPI):**
+- `web/backend/app/main.py` - FastAPI application entry point
+- `web/backend/app/routers/` - API endpoints (channels, streams, epg)
+- `web/backend/app/services/` - Business logic (cache, proxy, transcoder)
+- `web/backend/tests/` - Pytest test suite (17 tests)
+
+**Frontend (Vanilla JS + Video.js):**
+- `web/frontend/index.html` - Main SPA entry point
+- `web/frontend/js/` - Application modules (player, channels, epg, api)
+- `web/frontend/js/vendor/` - Video.js core + plugins (local, no CDN)
+- `web/frontend/css/` - Styling
+
+### Running the Web Application
+```bash
+cd web/backend
+venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Open http://localhost:8000 in browser
+```
+
+### Testing the Backend
+```bash
+cd web/backend
+venv/bin/pytest tests/ -v
+```
+
+### Phase 1 Priority (Critical Playback Fixes)
+- [ ] Fix HLS stream loading freeze
+- [ ] Add 15s loading timeout
+- [ ] Improve error messaging
+- [ ] Add integration tests
+
+### Data Sources
+- `tv-garden-channel-list/` - Curated channel database
+- `iptv-org API` - Channel metadata and streams
