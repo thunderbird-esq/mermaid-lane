@@ -310,6 +310,58 @@ const Channels = {
     },
 
     /**
+     * Get stream health indicator based on known geo-blocked patterns
+     */
+    getStreamHealthIndicator(channel) {
+        // Countries with known geo-restrictions
+        const geoBlockedCountries = ['cn', 'ir', 'kz'];
+        const warningCountries = ['uk', 'in', 'br', 'ru'];
+
+        // URL patterns known to be geo-blocked
+        const geoBlockedPatterns = [
+            'bbc.co.uk', '.bbc.', 'akamaized.net/x=4/i=urn:bbc',
+            'telewebion.com', 'kaztrk.kz'
+        ];
+
+        const warningPatterns = [
+            '3catdirectes.cat', 'rtve.es', 'brasilstream',
+            'cdnmedia.tv/canal', 'cdnmedia.tv/cristo'
+        ];
+
+        const countryLower = (channel.country || '').toLowerCase();
+
+        // Check if country is known to be geo-blocked
+        if (geoBlockedCountries.includes(countryLower)) {
+            return { type: 'geo-blocked', emoji: '🔒', title: 'May require VPN (geo-restricted region)' };
+        }
+
+        // Check if country has some geo-restrictions
+        if (warningCountries.includes(countryLower)) {
+            return { type: 'warning', emoji: '⚡', title: 'Some streams may be region-locked' };
+        }
+
+        // Check streams for known patterns (if available)
+        const streams = channel.streams || [];
+        for (const stream of streams) {
+            const url = (stream.url || '').toLowerCase();
+
+            for (const pattern of geoBlockedPatterns) {
+                if (url.includes(pattern)) {
+                    return { type: 'geo-blocked', emoji: '🔒', title: 'Stream may be geo-restricted' };
+                }
+            }
+
+            for (const pattern of warningPatterns) {
+                if (url.includes(pattern)) {
+                    return { type: 'warning', emoji: '⚡', title: 'Stream may require geo-bypass' };
+                }
+            }
+        }
+
+        return null;
+    },
+
+    /**
      * Create channel card element
      */
     createChannelCard(channel) {
@@ -317,6 +369,7 @@ const Channels = {
         const category = channel.categories?.[0];
         const country = this.countries.find(c => c.code === channel.country);
         const nowPlaying = channel.now_playing;
+        const healthIndicator = this.getStreamHealthIndicator(channel);
 
         // Calculate progress if now playing exists
         let progressPercent = 0;
@@ -332,6 +385,12 @@ const Channels = {
             dataset: { channelId: channel.id },
             onClick: () => this.openChannel(channel.id)
         }, [
+            // Health indicator badge
+            healthIndicator ? Utils.createElement('div', {
+                className: `stream-health-indicator ${healthIndicator.type}`,
+                title: healthIndicator.title
+            }, [healthIndicator.emoji]) : null,
+
             Utils.createElement('div', { className: 'channel-card-inner' }, [
                 // Logo
                 logo ?
@@ -375,7 +434,7 @@ const Channels = {
                 // Favorite button
                 Favorites.createToggleButton(channel.id)
             ])
-        ]);
+        ].filter(Boolean));
 
         return card;
     },
