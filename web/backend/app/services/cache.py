@@ -171,12 +171,13 @@ class CacheService:
     
     # Channel-specific methods
     async def store_channels(self, channels: list[dict]):
-        """Bulk store channels for efficient querying."""
+        """Bulk store/update channels using upsert pattern."""
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("DELETE FROM channels")
+            # Use INSERT OR REPLACE instead of DELETE + INSERT
+            # This preserves existing data and only updates/adds new entries
             for ch in channels:
                 await db.execute(
-                    """INSERT INTO channels 
+                    """INSERT OR REPLACE INTO channels 
                        (id, name, alt_names, network, owners, country, categories, 
                         is_nsfw, launched, closed, replaced_by, website, data)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
@@ -269,15 +270,17 @@ class CacheService:
     
     # Stream methods
     async def store_streams(self, streams: list[dict]):
-        """Bulk store streams."""
+        """Bulk store/update streams using upsert pattern."""
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("DELETE FROM streams")
-            for i, stream in enumerate(streams):
-                # Generate unique ID from URL, channel, and index
-                unique_str = f"{stream.get('url', '')}{stream.get('channel', '')}{i}"
+            # Use INSERT OR REPLACE instead of DELETE + INSERT
+            # This preserves existing data and only updates/adds new entries
+            for stream in streams:
+                # Generate stable ID from URL and channel (not index-dependent)
+                # This ensures same stream always gets same ID
+                unique_str = f"{stream.get('url', '')}{stream.get('channel', '')}"
                 stream_id = hashlib.md5(unique_str.encode()).hexdigest()[:12]
                 await db.execute(
-                    """INSERT INTO streams 
+                    """INSERT OR REPLACE INTO streams 
                        (id, channel_id, feed_id, title, url, referrer, user_agent, quality, data)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (

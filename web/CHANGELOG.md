@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2025-12-14
+
+### Fixed
+- **Non-destructive imports** - `store_channels()` and `store_streams()` now use INSERT OR REPLACE
+  - Previous DELETE + INSERT pattern destroyed all data on each sync
+  - Now data is preserved and only updated/added
+  
+- **Stable stream IDs** - Removed index dependency from stream ID generation
+  - Stream IDs now based only on URL + channel (deterministic)
+  - Same stream always gets same ID across imports
+  
+- **Pydantic V2 deprecation** - Replaced class-based `Config` with `model_config`
+  - Uses `SettingsConfigDict` for configuration
+  - No more deprecation warnings in test output
+
+### Changed
+- Test output is now warning-free (was 1 Pydantic warning)
+- Added `web/backend/data/hls_transcodes/` to gitignore
+
 ## [1.2.0] - 2025-12-14
 
 ### Added

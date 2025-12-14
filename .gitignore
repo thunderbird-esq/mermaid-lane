@@ -100,6 +100,9 @@ tmp/
 web/backend/data/epg/
 *_guide.xml
 
+# Transcoder output (large HLS segments)
+web/backend/data/hls_transcodes/
+
 # Package lock files (optional - uncomment if not needed)
 # package-lock.json
 # yarn.lock

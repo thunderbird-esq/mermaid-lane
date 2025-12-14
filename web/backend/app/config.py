@@ -3,7 +3,7 @@ Configuration management for IPTV Web Backend.
 Uses pydantic-settings for environment variable loading.
 """
 from functools import lru_cache
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -35,9 +35,8 @@ class Settings(BaseSettings):
     # Database
     database_path: str = "data/iptv_cache.db"
     
-    class Config:
-        env_prefix = "IPTV_"
-        env_file = ".env"
+    # Pydantic V2 configuration
+    model_config = SettingsConfigDict(env_prefix="IPTV_", env_file=".env")
 
 
 @lru_cache
