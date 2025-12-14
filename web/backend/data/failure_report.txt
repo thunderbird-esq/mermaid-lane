@@ -1,0 +1,109 @@
+============================================================
+STREAM FAILURE ANALYSIS REPORT
+Generated: 2025-12-14 05:24:13
+============================================================
+
+Total problematic streams: 2852
+  - Failed: 2322
+  - Warning (geo-blocked): 530
+
+------------------------------------------------------------
+BY ERROR TYPE
+------------------------------------------------------------
+  dead_404: 1040 (36.5%)
+  timeout: 607 (21.3%)
+  geo_blocked_403: 530 (18.6%)
+  connection_refused: 417 (14.6%)
+  other: 149 (5.2%)
+  bad_request_400: 109 (3.8%)
+
+------------------------------------------------------------
+BY COUNTRY (top 15)
+------------------------------------------------------------
+  Unknown: 554 streams
+  US: 261 streams
+  UK: 200 streams
+  IN: 178 streams
+  CN: 151 streams
+  ES: 107 streams
+  IR: 107 streams
+  CA: 71 streams
+  HU: 57 streams
+  RU: 51 streams
+  TR: 48 streams
+  FR: 44 streams
+  IT: 42 streams
+  DO: 40 streams
+  GT: 34 streams
+
+------------------------------------------------------------
+BY DOMAIN/CDN (3+ failures)
+------------------------------------------------------------
+  akamaized.net: 248 streams
+  cloudfront.net: 232 streams
+  amazonaws.com: 99 streams
+  amagi.tv: 81 streams
+  streamlock.net: 70 streams
+  splus.ir: 62 streams
+  bozztv.com: 52 streams
+  wurl.com: 46 streams
+  telewebion.com: 42 streams
+  catcast.tv: 40 streams
+  rakuten.tv: 30 streams
+  chinashadt.com:2036: 30 streams
+  tvpass.org: 30 streams
+  248.71: 26 streams
+  ottera.tv: 25 streams
+  moveonjoy.com: 20 streams
+  goliveafrica.media:9998: 19 streams
+  com.cn: 18 streams
+  209.52:9003: 18 streams
+  186.33:8000: 17 streams
+
+------------------------------------------------------------
+SAMPLE FAILURES PER CATEGORY
+------------------------------------------------------------
+
+DEAD_404 (1040 total):
+  - Bebeto TV: https://mlb.essastream.com:8081/bebetotelevision/index.m3u8
+  - Cenovision HD: https://5790d294af2dc.streamlock.net/cenovision/cenovision/p...
+  - ColimdoT TV: https://cnn.livestreaminggroup.info:3132/live/colimdotvlive....
+  - CromTV: https://cnn.essastream.com:3333/live/cromtvlive.m3u8
+  - Enntivisión: https://rdn.essastream.com:3356/live/enntivisiontvlive.m3u8
+
+TIMEOUT (607 total):
+  - Digital809 TV: https://inliveserver.com:1936/digital809tv/digital809tv/play...
+  - VillaAltagracia TV: https://inliveserver.com:1936/10016/10016/playlist.m3u8
+  - Mezőkövesdi Televízió: https://cloudfront44.lexanetwork.com:1344/freerelay/mezokove...
+  - REFLET TV: https://edge-a3.evrideo.tv/8f37c9f0-fe22-44f4-b64a-76ad11730...
+  - Geo Kahani: https://jk3lz82elw79-hls-live.5centscdn.com/harPalGeo/955ad3...
+
+GEO_BLOCKED_403 (530 total):
+  - DW English: https://live.fptplay53.net/fnxhd2/dwenglish_hls.smil/chunkli...
+  - CNBC Asia: https://live.fptplay53.net/fnxsd1/cnbc_hls.smil/chunklist.m3...
+  - Evrokom: https://live.ecomservice.bg/hls/stream.m3u8
+  - HTV Sports: https://live.fptplay53.net/epzhd1/htvcthethao_vhls.smil/chun...
+  - HTV3: https://live.fptplay53.net/epzhd1/htv3_hls.smil/chunklist.m3...
+
+CONNECTION_REFUSED (417 total):
+  - NS Home Shopping: https://livestream.nsmall.com/IPHONE/nsmallMobile.m3u8
+  - NS Shop Plus: https://shoppstream.nsmall.com/IPHONE/mobile.m3u8
+  - Polsat: https://flexi-s1.purplecdn.xyz/Polsat_HD/tracks-v1a1/mono.ts...
+  - TVP1: https://flexi-s1.purplecdn.xyz/TVP1_HD/tracks-v1a1/mono.ts.m...
+  - TVP2: https://flexi-s1.purplecdn.xyz/TVP2_HD/tracks-v1a1/mono.ts.m...
+
+OTHER (149 total):
+  - Beyaz TV: https://mn-nl.mncdn.com/blutv_beyaztv2/live.m3u8
+  - Bizimev TV: https://mn-nl.mncdn.com/blutv_bizimev/bizimev_sd.smil/playli...
+  - Flash TV: https://mn-nl.mncdn.com/blutv_flashtv/live.m3u8
+  - Master's TV: https://mn-nl.mncdn.com/commectv_live/masterstv/index.m3u8
+  - Hope Channel Australia: https://videodelivery.net/9fb3596948ddf463fde0ec4b85625b24/m...
+
+BAD_REQUEST_400 (109 total):
+  - Abadan: https://lenz.splus.ir/PLTV/88888888/224/3221227000/index.m3u...
+  - Aflak: https://lenz.splus.ir/PLTV/88888888/224/3221226675/index.m3u...
+  - Aftab: https://lenz.splus.ir/PLTV/88888888/224/3221226899/index.m3u...
+  - Al Alam: https://lenz.splus.ir/PLTV/88888888/224/3221226157/index.m3u...
+  - AlKawthar: https://lenz.splus.ir/PLTV/88888888/224/3221226158/index.m3u...
+
+============================================================
