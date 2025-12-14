@@ -22,6 +22,7 @@ A modern, secure IPTV streaming web application built on top of the [iptv-org](h
 
 - Python 3.10+
 - pip
+- **ffmpeg** (required for transcoding non-HLS streams)
 
 ### Installation
 
@@ -40,9 +41,64 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
+### Docker Deployment
+
+```bash
+cd web
+
+# Set admin API key (required for production)
+export IPTV_ADMIN_API_KEY=your-secure-key-here
+
+# Start with Docker Compose
+docker compose up -d
+
+# View logs
+docker compose logs -f
+```
+
 ### Access
 
 Open [http://localhost:8000](http://localhost:8000) in your browser.
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `IPTV_HOST` | Server bind address | `0.0.0.0` |
+| `IPTV_PORT` | Server port | `8000` |
+| `IPTV_DEBUG` | Enable debug mode | `false` |
+| `IPTV_ADMIN_API_KEY` | API key for admin endpoints | `dev-admin-key` |
+| `IPTV_DATABASE_PATH` | SQLite database location | `data/iptv_cache.db` |
+| `IPTV_CACHE_TTL_SECONDS` | Cache TTL for API responses | `3600` |
+
+## API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/health` | Health check |
+| `GET /api/channels` | List channels (filterable) |
+| `GET /api/channels/{id}` | Get channel with streams |
+| `GET /api/categories` | List categories |
+| `GET /api/countries` | List countries |
+| `GET /api/streams/{id}/play.m3u8` | Proxied HLS stream |
+| `GET /api/epg/{channel_id}` | EPG for channel |
+| `POST /api/sync?X-Admin-Key=KEY` | Trigger data sync (protected) |
+
+## Troubleshooting
+
+### Streams not loading?
+1. Check browser console for errors
+2. Try a different stream - some upstream sources may be offline
+3. For YouTube streams: "Playback on other websites disabled" = video owner restriction
+
+### Video stuck loading?
+- HLS streams timeout after 15 seconds
+- YouTube streams timeout after 30 seconds
+- Try refreshing and selecting a different stream
+
+### CORS errors?
+- The server allows all origins by default
+- For production, set `IPTV_CORS_ORIGINS` to your domain
 
 ## Architecture
 
@@ -55,23 +111,14 @@ web/
 │   │   ├── models/    # Pydantic data models
 │   │   ├── routers/   # API endpoints
 │   │   └── services/  # Business logic
+│   ├── Dockerfile
 │   └── requirements.txt
-└── frontend/          # Static frontend
-    ├── index.html
-    ├── css/           # Stylesheets
-    └── js/            # JavaScript modules
+├── frontend/          # Static frontend
+│   ├── index.html
+│   ├── css/           # Stylesheets
+│   └── js/            # JavaScript modules
+└── docker-compose.yml
 ```
-
-## API Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/channels` | List channels (filterable) |
-| `GET /api/channels/{id}` | Get channel with streams |
-| `GET /api/categories` | List categories |
-| `GET /api/countries` | List countries |
-| `GET /api/streams/{id}/play.m3u8` | Proxied HLS stream |
-| `GET /api/epg/{channel_id}` | EPG for channel |
 
 ## Data Source
 
@@ -83,3 +130,4 @@ Channel data is fetched from [iptv-org API](https://github.com/iptv-org/api):
 ## License
 
 This project is for educational purposes. Respect the licenses of upstream data sources.
+

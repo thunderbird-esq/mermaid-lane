@@ -1,0 +1,29 @@
+# IPTV Web Docker Deployment
+
+services:
+  iptv-web:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: iptv-web
+    ports:
+      - "8000:8000"
+    environment:
+      - IPTV_HOST=0.0.0.0
+      - IPTV_PORT=8000
+      - IPTV_DEBUG=false
+      - IPTV_ADMIN_API_KEY=${IPTV_ADMIN_API_KEY:-change-me-in-production}
+      - IPTV_DATABASE_PATH=/app/data/iptv_cache.db
+    volumes:
+      - iptv-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  iptv-data:
+    driver: local

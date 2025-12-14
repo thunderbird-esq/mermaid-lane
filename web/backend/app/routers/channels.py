@@ -133,11 +133,19 @@ async def list_providers():
 
 
 @router.post("/sync")
-async def trigger_sync():
+async def trigger_sync(x_admin_key: Optional[str] = Query(None, alias="X-Admin-Key")):
     """
     Trigger data sync from iptv-org API.
-    (Admin endpoint - should be protected in production)
+    Requires X-Admin-Key header or query parameter.
+    Set IPTV_ADMIN_API_KEY environment variable to configure.
     """
+    import os
+    expected_key = os.getenv("IPTV_ADMIN_API_KEY", "dev-admin-key")
+    
+    if x_admin_key != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid or missing admin API key")
+    
     sync_service = get_sync_service()
     results = await sync_service.sync_all()
     return {"status": "completed", "synced": results}
+

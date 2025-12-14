@@ -4,7 +4,7 @@ All streams are proxied to hide original URLs.
 """
 from fastapi import APIRouter, Request, Query, HTTPException
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 
 from app.services.stream_proxy import get_proxy_service
 from app.services.cache import get_cache

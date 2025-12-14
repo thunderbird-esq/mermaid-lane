@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2025-12-14
+
+### Added - Phase 4 & 5
+- **API key protection** for `/api/sync` endpoint (X-Admin-Key header)
+- **5 new tests** for cache upsert behavior and admin endpoint security
+- **Docker deployment** - `docker-compose.yml` and `Dockerfile` with ffmpeg
+- **robots.txt** to prevent API endpoint indexing
+- **Environment variables documentation** in README
+- **Troubleshooting section** in README
+
+### Changed
+- Removed unused `List` import from `streams.py`
+- Test count: 26 (was 21)
+
+### Security
+- `/api/sync` now requires `IPTV_ADMIN_API_KEY` environment variable
+
 ## [1.4.0] - 2025-12-14
 
 ### Added
