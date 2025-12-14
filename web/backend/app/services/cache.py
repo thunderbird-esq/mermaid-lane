@@ -174,8 +174,10 @@ class CacheService:
     
     @staticmethod
     def _is_epg_cache_valid() -> bool:
-        # Implementation in main EPG method
-        pass
+        """Check if EPG cache is still valid (placeholder - always returns True for now)."""
+        # TODO: Implement proper TTL check against epg_cache_days setting
+        # For now, assume cache is valid if programs exist
+        return True
 
     # ... (other methods unchanged) ...
 

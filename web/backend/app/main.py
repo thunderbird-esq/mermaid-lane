@@ -102,20 +102,26 @@ async def health_check():
 
 @app.get("/api/stats")
 async def get_stats():
-    """Get database statistics."""
+    """Get database statistics including playable channel counts."""
     cache = await get_cache()
-    channels, total_channels = await cache.get_channels(page=1, per_page=1)
+    
+    # Get channel counts (playable vs total)
+    _, playable_count = await cache.get_channels(page=1, per_page=1, playable_only=True)
+    _, total_count = await cache.get_channels(page=1, per_page=1, playable_only=False)
+    
     countries = await cache.get_countries()
     categories = await cache.get_categories()
     
     return {
-        "total_channels": total_channels,
+        "playable_channels": playable_count,
+        "total_channels": total_count,
         "total_countries": len(countries),
         "total_categories": len(categories),
         "countries_with_channels": len([c for c in countries if c.get("channel_count", 0) > 0])
     }
 
 
+# Note: Stream-specific stats at /api/streams/stats
 # Serve frontend static files
 frontend_path = Path(__file__).parent.parent.parent / "frontend"
 

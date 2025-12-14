@@ -35,7 +35,8 @@ class TestCacheUpsert:
             await cache.store_channels(channels_batch2)
             
             # Verify all 3 channels exist (upsert behavior)
-            all_channels, total = await cache.get_channels(page=1, per_page=100)
+            # Note: playable_only=False because test channels have no streams
+            all_channels, total = await cache.get_channels(page=1, per_page=100, playable_only=False)
             channel_ids = {ch["id"] for ch in all_channels}
             
             assert total == 3, f"Expected 3 channels, got {total}"

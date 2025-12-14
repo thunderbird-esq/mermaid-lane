@@ -6,13 +6,14 @@ A modern, secure IPTV streaming web application built on top of the [iptv-org](h
 
 ## Features
 
-- 📺 **38,000+ Channels** from iptv-org database
+- 📺 **14,000+ Playable Channels** (43k total in catalog) from iptv-org database
 - 🌍 **200+ Countries** with filtering and search
 - 🎯 **30 Categories** (News, Sports, Movies, etc.)
 - 🏢 **Provider Filter** - Browse by Pluto TV, Tubi, Samsung TV Plus, etc.
 - 🔒 **Secure Streaming** - All streams proxied (no URL exposure)
 - 📅 **EPG Integration** - Now Playing info & channel guides
 - ❤️ **Favorites** - Save and organize your favorite channels
+- 🏥 **Stream Health Monitoring** - Background health checks with status badges
 - 📱 **PWA Support** - Installable on mobile & desktop
 - 🌙 **Dark Theme** - Modern glassmorphism UI
 
@@ -76,11 +77,14 @@ Open [http://localhost:8000](http://localhost:8000) in your browser.
 | Endpoint | Description |
 |----------|-------------|
 | `GET /api/health` | Health check |
-| `GET /api/channels` | List channels (filterable) |
+| `GET /api/stats` | Database statistics (playable/total channels) |
+| `GET /api/channels` | List channels (filterable, `playable_only=true` by default) |
 | `GET /api/channels/{id}` | Get channel with streams |
 | `GET /api/categories` | List categories |
 | `GET /api/countries` | List countries |
 | `GET /api/streams/{id}/play.m3u8` | Proxied HLS stream |
+| `GET /api/streams/health-stats` | Stream health statistics |
+| `GET /api/streams/health-worker` | Health worker status |
 | `GET /api/epg/{channel_id}` | EPG for channel |
 | `POST /api/sync?X-Admin-Key=KEY` | Trigger data sync (protected) |
 
@@ -123,9 +127,12 @@ web/
 ## Data Source
 
 Channel data is fetched from [iptv-org API](https://github.com/iptv-org/api):
-- Channels: ~38,000
-- Streams: Variable availability
-- EPG: From iptv-org/epg sources
+- **Channels in catalog**: ~43,000 (from iptv-org/database)
+- **Playable channels**: ~14,000 (with active stream URLs)
+- **Streams**: ~19,000 (from iptv-org/iptv)
+- **EPG**: From iptv-org/epg sources
+
+> Note: Many channels exist in the catalog without available streams. The UI defaults to showing only playable channels.
 
 ## License
 
