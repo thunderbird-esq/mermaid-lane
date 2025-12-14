@@ -833,3 +833,71 @@ img {
         font-size: 14px;
     }
 }
+
+
+/* ===== Stream Health Indicators ===== */
+.stream-health-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 14px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 5;
+}
+
+.stream-health-indicator.warning {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid var(--warning);
+    animation: pulse-warning 2s infinite;
+}
+
+.stream-health-indicator.geo-blocked {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid var(--error);
+}
+
+.stream-health-indicator.unknown {
+    background: rgba(156, 163, 175, 0.2);
+    border: 1px solid #9ca3af;
+}
+
+@keyframes pulse-warning {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* Tooltip for health indicator */
+.stream-health-indicator[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    padding: 4px 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    white-space: nowrap;
+    color: var(--text-secondary);
+    z-index: 10;
+}
+
+/* Channel card needs relative positioning for indicator */
+.channel-card {
+    position: relative;
+}

@@ -84,13 +84,38 @@ class StreamProxyService:
         headers = self._build_headers(stream)
         stream_url = stream["url"]
         
+        # Import geo-bypass service
+        from app.services.geo_bypass import get_geo_bypass_service
+        
         last_error = None
+        geo_bypass_attempted = False
+        
         for attempt in range(max_retries + 1):
             try:
                 async with httpx.AsyncClient(
-                    timeout=httpx.Timeout(self.CONNECT_TIMEOUT, read=self.READ_TIMEOUT)
+                    timeout=httpx.Timeout(self.CONNECT_TIMEOUT, read=self.READ_TIMEOUT),
+                    verify=False  # Some streams have bad certs
                 ) as client:
                     response = await client.get(stream_url, headers=headers, follow_redirects=True)
+                    
+                    # Check for geo-blocking - try bypass if not already attempted
+                    if response.status_code == 403 and not geo_bypass_attempted:
+                        logger.info(f"Stream {stream_id} returned 403, attempting geo-bypass...")
+                        geo_bypass_attempted = True
+                        
+                        geo_service = await get_geo_bypass_service()
+                        bypass_response = await geo_service.fetch_with_bypass(
+                            stream_url, 
+                            headers,
+                            try_spoof=True
+                        )
+                        
+                        if bypass_response.status_code == 200:
+                            logger.info(f"Geo-bypass SUCCESS for {stream_id}")
+                            response = bypass_response
+                        else:
+                            logger.warning(f"Geo-bypass failed for {stream_id}, still {bypass_response.status_code}")
+                    
                     response.raise_for_status()
                     
                     # Use final URL after redirects for resolving relative paths
@@ -118,6 +143,12 @@ class StreamProxyService:
                     continue
                 raise HTTPException(status_code=504, detail="Stream timed out after retries")
             except httpx.HTTPStatusError as e:
+                # On 403, include hint about geo-blocking
+                if e.response.status_code == 403:
+                    raise HTTPException(
+                        status_code=403, 
+                        detail="Stream is geo-restricted and bypass failed"
+                    )
                 # Retry on 5xx errors only
                 if 500 <= e.response.status_code < 600 and attempt < max_retries:
                     wait_time = (2 ** attempt) * 0.5
