@@ -899,25 +899,7 @@ class CacheService:
         return result or {}
     
     # ==================== STREAM HEALTH TRACKING ====================
-    
-    async def update_stream_health(
-        self, 
-        stream_id: str, 
-        status: str, 
-        response_ms: int = None, 
-        error: str = None
-    ):
-        """Update health status for a stream."""
-        async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("""
-                UPDATE streams 
-                SET health_status = ?,
-                    health_checked_at = datetime('now'),
-                    health_response_ms = ?,
-                    health_error = ?
-                WHERE id = ?
-            """, (status, response_ms, error, stream_id))
-            await db.commit()
+    # Note: update_stream_health is defined earlier (line ~219) with next_check_due parameter
     
     async def get_unchecked_streams(self, limit: int = 50) -> list[dict]:
         """Get streams that haven't been health-checked yet or were checked long ago."""
