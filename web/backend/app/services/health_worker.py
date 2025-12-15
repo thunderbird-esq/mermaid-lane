@@ -164,7 +164,7 @@ class HealthWorker:
                 status=result["status"],
                 response_ms=result.get("response_ms"),
                 error=result.get("error"),
-                next_check_due=next_check
+                next_check_due=next_check.isoformat() if next_check else None
             )
             
             self._stats["total_tested"] += 1

@@ -103,7 +103,55 @@ class DataSyncService:
                 results[key] = len(data)
                 logger.info(f"Cached {len(data)} {key}")
         
+        # Import M3U streams if available (Docker bundled or local)
+        m3u_imported = await self._import_m3u_streams(cache)
+        if m3u_imported > 0:
+            results["m3u_streams"] = m3u_imported
+            # Recalculate playable channels after M3U import
+            counts = await cache.update_channel_stream_counts()
+            results["playable_channels"] = counts["playable"]
+            results["total_channels"] = counts["total"]
+            logger.info(f"📺 Updated playable: {counts['playable']} / {counts['total']}")
+        
         return results
+    
+    async def _import_m3u_streams(self, cache) -> int:
+        """Import streams from bundled M3U files."""
+        from pathlib import Path
+        from app.services.m3u_parser import import_m3u_directory
+        
+        # Check Docker path first, then local development path
+        m3u_paths = [
+            Path("/app/iptv_streams"),  # Docker
+            Path(__file__).parent.parent.parent.parent / "iptv_streams",  # web/iptv_streams
+            Path(__file__).parent.parent.parent.parent.parent / "iptv" / "streams",  # iptv/streams
+        ]
+        
+        m3u_dir = None
+        for path in m3u_paths:
+            if path.exists() and path.is_dir():
+                m3u_dir = path
+                break
+        
+        if not m3u_dir:
+            logger.info("No M3U directory found, skipping M3U import")
+            return 0
+        
+        m3u_files = list(m3u_dir.glob("*.m3u"))
+        if not m3u_files:
+            logger.info(f"No M3U files found in {m3u_dir}")
+            return 0
+        
+        logger.info(f"Importing streams from {len(m3u_files)} M3U files in {m3u_dir}")
+        
+        try:
+            result = await import_m3u_directory(cache, m3u_dir)
+            total_imported = result.get('total_streams', 0)
+            logger.info(f"✅ Imported {total_imported} streams from M3U files")
+            return total_imported
+        except Exception as e:
+            logger.error(f"Failed to import M3U directory: {e}")
+            return 0
     
     async def get_languages(self) -> list[dict]:
         """Get cached languages."""

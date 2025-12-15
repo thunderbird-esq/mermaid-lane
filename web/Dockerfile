@@ -21,6 +21,10 @@ COPY backend/app ./app
 # Copy frontend static files
 COPY frontend ./frontend
 
+# Copy M3U stream files for additional streams
+# These are from iptv-org/iptv repository (not in API)
+COPY iptv_streams ./iptv_streams
+
 # Create data directory (but use volume in production)
 RUN mkdir -p /app/data
 
